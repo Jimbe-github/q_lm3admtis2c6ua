@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     });
 
     RecyclerView recyclerView = findViewById(R.id.recyclerView);
-    RowDataAdapter adapter = new RowDataAdapter(rowData -> {
+    BookInfoAdapter adapter = new BookInfoAdapter(rowData -> {
       //行クリック時
     });
     recyclerView.setAdapter(adapter);
@@ -99,14 +99,14 @@ public class MainActivity extends AppCompatActivity {
     return new URL(urltext);
   }
 
-  private List<RowData> createDataset(String html) {
+  private List<BookInfo> createDataset(String html) {
     return parseDocument(Jsoup.parse(html));
   }
 
-  private List<RowData> parseDocument(Document doc) {
-    List<RowData> rowDataList = new ArrayList<>();
+  private List<BookInfo> parseDocument(Document doc) {
+    List<BookInfo> list = new ArrayList<>();
 
-    Elements rows = doc.select("tr");
+    Elements rows = doc.select(".list > tr:not(:first-child)");
     for(Element row : rows) {
       Elements tds = row.select("td");
       try {
@@ -118,14 +118,14 @@ public class MainActivity extends AppCompatActivity {
         link.remove();
         String subtitle = titleElem.text().trim();
         String author = tds.get(3).text().trim(); //著者名
-        RowData rowData = new RowData(num, title, href, subtitle, author);
-        //Log.d("***", ""+rowData);
-        rowDataList.add(rowData);
+        BookInfo bookInfo = new BookInfo(num, title, href, subtitle, author);
+        //Log.d("***", ""+bookInfo);
+        list.add(bookInfo);
       } catch(NumberFormatException e) { //番号が数字で無かったら書籍データでは無い
         //continue;
       }
     }
-    return rowDataList;
+    return list;
   }
 }
 
@@ -173,11 +173,11 @@ class DownloadExecutor extends ThreadPoolExecutor {
   }
 }
 
-class RowData {
+class BookInfo {
   final int num;
   final String title, href, subtitle, author;
 
-  RowData(int num, String title, String href, String subtitle, String author) {
+  BookInfo(int num, String title, String href, String subtitle, String author) {
     this.num = num;
     this.title = title;
     this.href = href;
@@ -191,10 +191,10 @@ class RowData {
   }
 }
 
-class RowDataAdapter extends RecyclerView.Adapter<RowDataAdapter.ViewHolder> {
+class BookInfoAdapter extends RecyclerView.Adapter<BookInfoAdapter.ViewHolder> {
   @FunctionalInterface
   interface RowClickListener {
-    void onClick(RowData rowData);
+    void onClick(BookInfo bookInfo);
   }
 
   public class ViewHolder extends RecyclerView.ViewHolder {
@@ -207,19 +207,19 @@ class RowDataAdapter extends RecyclerView.Adapter<RowDataAdapter.ViewHolder> {
       subtitle = itemView.findViewById(R.id.subtitle);
       author = itemView.findViewById(R.id.author);
       if(rowClickListener != null)
-        itemView.setOnClickListener(v -> rowClickListener.onClick((RowData)itemView.getTag()));
+        itemView.setOnClickListener(v -> rowClickListener.onClick((BookInfo)itemView.getTag()));
     }
   }
 
   private final RowClickListener rowClickListener;
-  private List<RowData> list = Collections.emptyList();
+  private List<BookInfo> list = Collections.emptyList();
 
-  public RowDataAdapter(RowClickListener rowClickListener) {
+  public BookInfoAdapter(RowClickListener rowClickListener) {
     this.rowClickListener = rowClickListener;
   }
 
   @SuppressLint("NotifyDataSetChanged")
-  public void setList(List<RowData> list) {
+  public void setList(List<BookInfo> list) {
     this.list = new ArrayList<>(list); //防御コピー
     notifyDataSetChanged();
   }
@@ -233,14 +233,14 @@ class RowDataAdapter extends RecyclerView.Adapter<RowDataAdapter.ViewHolder> {
 
   @Override
   public void onBindViewHolder(ViewHolder holder, int position) {
-    RowData rowData = list.get(position);
-    holder.itemView.setTag(rowData);
-    holder.num.setText(rowData.num + ".");
-    holder.title.setText(rowData.title);
-    holder.subtitle.setText(rowData.subtitle);
-    holder.author.setText(rowData.author);
+    BookInfo bookInfo = list.get(position);
+    holder.itemView.setTag(bookInfo);
+    holder.num.setText(bookInfo.num + ".");
+    holder.title.setText(bookInfo.title);
+    holder.subtitle.setText(bookInfo.subtitle);
+    holder.author.setText(bookInfo.author);
 
-    holder.subtitle.setVisibility(rowData.subtitle.isEmpty() ? View.GONE : View.VISIBLE);
+    holder.subtitle.setVisibility(bookInfo.subtitle.isEmpty() ? View.GONE : View.VISIBLE);
   }
 
   @Override
