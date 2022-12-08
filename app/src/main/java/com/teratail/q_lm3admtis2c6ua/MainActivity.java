@@ -20,6 +20,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
+import java.util.regex.*;
 
 public class MainActivity extends AppCompatActivity {
   private static final String REQUESTKEY_AIUEO_SELECT = "aiueo_select";
@@ -49,7 +50,12 @@ public class MainActivity extends AppCompatActivity {
       try {
         if(future != null) future.cancel(true);
         URL url = createUrl(result.getString(AiueoSelectFragment.RESULT_AIUEO_TAG));
-        future = executor.submit(new HttpRequest(url, html -> adapter.setList(createDataset(html))));
+        future = executor.submit(new HttpRequest(url, html -> {
+          Document document = Jsoup.parse(html);
+          adapter.setList(parseList(document));
+          int maxPage = parsePageCount(document);
+          //Log.d("***", "maxPage="+maxPage);
+        }));
         button.setText(result.getString(AiueoSelectFragment.RESULT_AIUEO));
       } catch (MalformedURLException e) {
         e.printStackTrace();
@@ -100,23 +106,23 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private List<BookInfo> createDataset(String html) {
-    return parseDocument(Jsoup.parse(html));
+    return parseList(Jsoup.parse(html));
   }
 
-  private List<BookInfo> parseDocument(Document doc) {
+  private List<BookInfo> parseList(Document doc) {
     List<BookInfo> list = new ArrayList<>();
 
-    Elements rows = doc.select(".list > tr:not(:first-child)");
+    Elements rows = doc.select("table.list tr:not(:first-child)");
     for(Element row : rows) {
       Elements tds = row.select("td");
       try {
-        int num = Integer.parseInt(tds.get(0).text());
-        Element titleElem = tds.get(1);
+        int num = Integer.parseInt(tds.get(0).text()); //番号
+        Element titleElem = tds.get(1); //<a href="～">タイトル</a><br>サブタイトル
         Elements link = titleElem.select("a");
-        String title = link.text().trim();
+        String title = link.text().trim(); //タイトル
         String href = link.attr("href");
-        link.remove();
-        String subtitle = titleElem.text().trim();
+        String[] titles = titleElem.html().split("<br>", 2);
+        String subtitle = titles.length > 1 ? titles[1].trim() : ""; //サブタイトル
         String author = tds.get(3).text().trim(); //著者名
         BookInfo bookInfo = new BookInfo(num, title, href, subtitle, author);
         //Log.d("***", ""+bookInfo);
@@ -126,6 +132,25 @@ public class MainActivity extends AppCompatActivity {
       }
     }
     return list;
+  }
+
+  private int parsePageCount(Document doc) {
+    int count = 1;
+    Elements links = doc.select("a[href^=sakuhin_]");
+    Pattern p = Pattern.compile("sakuhin_[a-z]{1,2}(\\d+)\\.html");
+    for(Element link : links) {
+      String href = link.attr("href");
+      Log.d("***","href="+href);
+      Matcher m = p.matcher(href);
+      if(m.matches()) {
+        try {
+          int num = Integer.parseInt(m.group(1));
+          count = Math.max(count, num);
+        } catch(NumberFormatException ignore) { //念の為
+        }
+      }
+    }
+    return count;
   }
 }
 
