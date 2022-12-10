@@ -8,6 +8,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.*;
 import androidx.lifecycle.*;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
 
 public class MainActivity extends AppCompatActivity {
   private static final String LOG_TAG = MainActivity.class.getSimpleName();
@@ -24,12 +26,28 @@ public class MainActivity extends AppCompatActivity {
     MainViewModel viewModel = new ViewModelProvider(this).get(MainViewModel.class);
     viewModel.setModel(mainModel);
 
-    View view = null;
-    if((view = findViewById(R.id.fragment_container_view)) != null) {
-      Log.d(LOG_TAG, "R.id.fragment_container_view: view="+view.getClass().getSimpleName());
-      if(view instanceof FragmentContainerView) {
-        fm.beginTransaction().replace(R.id.fragment_container_view, new BookListFragment()).commit();
-      }
+    ViewPager2 viewPager = findViewById(R.id.viewPager);
+    viewPager.setAdapter(new ViewPagerAdapter(this));
+
+    viewModel.getSelectedBookInfo().observe(this, bookInfo -> {
+      viewPager.setCurrentItem(1);
+    });
+  }
+
+  private static class ViewPagerAdapter extends FragmentStateAdapter {
+    public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
+      super(fragmentActivity);
+    }
+
+    @NonNull
+    @Override
+    public Fragment createFragment(int position) {
+      return position == 0 ? new BookListFragment() : new WebViewFragment();
+    }
+
+    @Override
+    public int getItemCount() {
+      return 2;
     }
   }
 }

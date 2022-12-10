@@ -1,6 +1,7 @@
 package com.teratail.q_lm3admtis2c6ua;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.*;
 import android.widget.*;
@@ -37,8 +38,8 @@ public class BookListFragment extends Fragment {
     });
 
     RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
-    BookInfoAdapter adapter = new BookInfoAdapter(rowData -> {
-      //行クリック時
+    BookInfoAdapter adapter = new BookInfoAdapter(bookInfo -> {
+      viewModel.setSelectedBookInfo(bookInfo);
     });
     recyclerView.setAdapter(adapter);
     viewModel.getBooklistPage().observe(getViewLifecycleOwner(), booklistPage -> {

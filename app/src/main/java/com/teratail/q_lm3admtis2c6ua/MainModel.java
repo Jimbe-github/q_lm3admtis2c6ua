@@ -1,5 +1,6 @@
 package com.teratail.q_lm3admtis2c6ua;
 
+import android.net.Uri;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -55,11 +56,12 @@ public class MainModel implements DefaultLifecycleObserver {
     }
     if(aiueo != null) {
       final int currentPage = page > 1 ? page : 1;
+      URL url = createUrl(aiueo, page);
       future = executor.submit(new HttpRequest(createUrl(aiueo, page), html -> {
         Document document = Jsoup.parse(html);
         int maxPage = getPageLinkMax(document);
         if(maxPage == currentPage-1) maxPage = currentPage; //currentPage のリンクは無い為、最終ページの場合リンクの最大は1少ないので補正
-        callback.accept(new BooklistPage(parseList(document), aiueo, currentPage, maxPage));
+        callback.accept(new BooklistPage(parseList(document, url), aiueo, currentPage, maxPage));
       }));
     }
   }
@@ -156,7 +158,7 @@ public class MainModel implements DefaultLifecycleObserver {
     }
   }
 
-  private List<BookInfo> parseList(Document doc) {
+  private List<BookInfo> parseList(Document doc, URL baseUrl) {
     List<BookInfo> list = new ArrayList<>();
 
     Elements rows = doc.select("table.list tr:not(:first-child)");
@@ -168,14 +170,17 @@ public class MainModel implements DefaultLifecycleObserver {
         Elements link = titleElem.select("a");
         String title = link.text().trim(); //タイトル
         String href = link.attr("href");
+        URL url = new URL(baseUrl, href);
         String[] titles = titleElem.html().split("<br>", 2);
         String subtitle = titles.length > 1 ? titles[1].trim() : ""; //サブタイトル
         String author = tds.get(3).text().trim(); //著者名
-        BookInfo bookInfo = new BookInfo(num, title, href, subtitle, author);
+        BookInfo bookInfo = new BookInfo(num, title, url, subtitle, author);
         //Log.d(LOG_TAG, ""+bookInfo);
         list.add(bookInfo);
       } catch(NumberFormatException e) { //番号が数字で無かったら書籍データでは無い
         //continue;
+      } catch(MalformedURLException e) { //リンクが変?
+        Log.w(LOG_TAG, e.toString());
       }
     }
     return list;

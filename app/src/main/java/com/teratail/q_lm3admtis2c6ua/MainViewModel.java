@@ -32,4 +32,12 @@ public class MainViewModel extends ViewModel {
   void setSelectedFromAiueo(Aiueo aiueo) {
     selectedFromAiueoLiveData.setValue(aiueo);
   }
+
+  private MutableLiveData<BookInfo> selectedBookInfoLiveData = new MutableLiveData<>();
+  LiveData<BookInfo> getSelectedBookInfo() {
+    return selectedBookInfoLiveData;
+  }
+  void setSelectedBookInfo(BookInfo bookInfo) {
+    selectedBookInfoLiveData.setValue(bookInfo);
+  }
 }
