@@ -32,12 +32,4 @@ public class MainViewModel extends ViewModel {
   void setSelectedFromAiueo(Aiueo aiueo) {
     selectedFromAiueoLiveData.setValue(aiueo);
   }
-
-  private Runnable requestSelectingFromAiueoCallback = null;
-  void setRequestSelectingFromAiueoCallback(Runnable callback) {
-    requestSelectingFromAiueoCallback = callback;
-  }
-  void requestSelectingFromAiueo() {
-    if(requestSelectingFromAiueoCallback != null) requestSelectingFromAiueoCallback.run();
-  }
 }

@@ -2,7 +2,6 @@ package com.teratail.q_lm3admtis2c6ua;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.*;
 import android.widget.*;
 
@@ -25,13 +24,15 @@ public class BookListFragment extends Fragment {
     MainViewModel viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
 
     Button button = view.findViewById(R.id.button);
-    button.setOnClickListener(v -> viewModel.requestSelectingFromAiueo());
+    //xml 上に ( 直接 AiueoSelectFragment を指定してある FragmentContainerView の )ID があるなら, ダイアログは必要無い = null
+    if(view.findViewById(R.id.aiueo_select) == null) {
+      button.setOnClickListener(v -> AiueoSelectFragment.newInstance(AiueoSelectFragment.Mode.DIALOG).show(getChildFragmentManager(), null));
+    }
 
     viewModel.getSelectedFromAiueo().observe(getViewLifecycleOwner(), aiueo -> {
       if(button.getTag() == aiueo) return;
       button.setTag(aiueo);
       button.setText(aiueo == null ? "(未選択)" : "" + aiueo);
-      Log.d(LOG_TAG, "this=" + BookListFragment.this + " viewModel.requestBookInfoList(" + aiueo + ")");
       viewModel.requestBookInfoList(aiueo, 1);
     });
 

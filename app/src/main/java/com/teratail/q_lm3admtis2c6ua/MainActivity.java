@@ -11,7 +11,6 @@ import androidx.lifecycle.*;
 
 public class MainActivity extends AppCompatActivity {
   private static final String LOG_TAG = MainActivity.class.getSimpleName();
-  private static final String TAG_AIUEOFRAGMENT_DIALOG = "AiueoSelectFragment_Dialog";
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -24,11 +23,6 @@ public class MainActivity extends AppCompatActivity {
     FragmentManager fm = getSupportFragmentManager();
     MainViewModel viewModel = new ViewModelProvider(this).get(MainViewModel.class);
     viewModel.setModel(mainModel);
-
-    //xml 上に ( 直接 AiueoSelectFragment を指定してある FragmentContainerView の )ID があるなら, ダイアログは必要無い = null
-    Runnable callback = findViewById(R.id.aiueo_select) != null ? null
-            : () -> AiueoSelectFragment.newInstance(AiueoSelectFragment.Mode.DIALOG).show(fm, TAG_AIUEOFRAGMENT_DIALOG);
-    viewModel.setRequestSelectingFromAiueoCallback(callback);
 
     View view = null;
     if((view = findViewById(R.id.fragment_container_view)) != null) {

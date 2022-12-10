@@ -131,7 +131,7 @@ public class MainModel implements DefaultLifecycleObserver {
     @Override
     public Void call() {
       try {
-        Log.d(LOG_TAG, "this=" + this + ", url="+url);
+        Log.d(LOG_TAG, "url="+url);
         HttpURLConnection con = (HttpURLConnection)url.openConnection();
         con.setRequestMethod("GET");
         con.connect();

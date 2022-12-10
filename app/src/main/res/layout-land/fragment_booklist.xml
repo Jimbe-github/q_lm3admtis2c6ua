@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".BookListFragment">
 
   <androidx.fragment.app.FragmentContainerView
       android:id="@+id/aiueo_select"
@@ -13,16 +13,27 @@
       android:layout_width="wrap_content"
       android:layout_height="0dp"
       app:layout_constraintBottom_toBottomOf="parent"
-      app:layout_constraintEnd_toStartOf="@id/fragment_container_view"
+      app:layout_constraintEnd_toStartOf="@id/recyclerView"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toTopOf="parent" />
 
-  <androidx.fragment.app.FragmentContainerView
-      android:id="@+id/fragment_container_view"
+  <Button
+      android:id="@+id/button"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="(最初の読みを選択)"
+      app:layout_constraintEnd_toEndOf="@id/recyclerView"
+      app:layout_constraintStart_toStartOf="@id/recyclerView"
+      app:layout_constraintTop_toTopOf="parent" />
+
+  <androidx.recyclerview.widget.RecyclerView
+      android:id="@+id/recyclerView"
       android:layout_width="0dp"
       android:layout_height="0dp"
+      app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
       app:layout_constraintBottom_toBottomOf="parent"
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintStart_toEndOf="@id/aiueo_select"
-      app:layout_constraintTop_toTopOf="parent" />
+      app:layout_constraintTop_toBottomOf="@id/button" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

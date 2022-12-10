@@ -3,7 +3,7 @@ package com.teratail.q_lm3admtis2c6ua;
 import android.content.*;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
+import android.util.*;
 import android.view.*;
 import android.widget.*;
 
@@ -56,15 +56,14 @@ public class AiueoSelectFragment extends DialogFragment {
     View.OnClickListener clickListener = v -> {
       Button button = (Button)v;
       changeSelected(button);
-      Log.d(LOG_TAG, "this=" + AiueoSelectFragment.this + ", viewModel.setSelectedFromAiueo(" + button.getTag() + ")");
       viewModel.setSelectedFromAiueo((Aiueo)button.getTag());
       mode.dismiss(this);
     };
 
-    float density = context.getResources().getDisplayMetrics().density; //px->dp
+    float density = context.getResources().getDisplayMetrics().density; //dp->px
     int width = (int)(60 * density);
     int height = (int)(60 * density);
-    int textSize = (int)(10 * density);
+    int textSize = (int)(30 * density);
 
     ScrollView view = new ScrollView(context);
     HorizontalScrollView hscroll = new HorizontalScrollView(context);
@@ -76,13 +75,13 @@ public class AiueoSelectFragment extends DialogFragment {
       if(aiueo == Aiueo.ゆ || aiueo == Aiueo.よ || aiueo == Aiueo.他) j++; //ボタンの隙間を空ける(enum の並び順依存)
       Button button = new AppCompatButton(context);
       GridLayout.LayoutParams params = new GridLayout.LayoutParams();
-      params.width = width;
-      params.height = height;
+      params.width = width; //[px]
+      params.height = height; //[px]
       params.columnSpec = GridLayout.spec(j % 5);
       params.rowSpec = GridLayout.spec(j / 5);
       button.setLayoutParams(params);
       button.setText(aiueo.toString());
-      button.setTextSize(textSize);
+      button.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize); //[px]
       button.setTag(aiueo);
       button.setOnClickListener(clickListener);
       grid.addView(button);
