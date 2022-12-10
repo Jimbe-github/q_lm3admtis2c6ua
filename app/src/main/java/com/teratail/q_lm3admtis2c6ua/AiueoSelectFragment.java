@@ -1,77 +1,79 @@
 package com.teratail.q_lm3admtis2c6ua;
 
-import android.app.*;
 import android.content.*;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.*;
 import android.widget.*;
 
 import androidx.annotation.*;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.DialogFragment;
+import androidx.lifecycle.ViewModelProvider;
+
+import java.util.*;
 
 public class AiueoSelectFragment extends DialogFragment {
-  private static final String ARG_REQUESTKEY = "requestkey";
-  private static final String ARG_SELECTED = "selected";
+  private static final String LOG_TAG = AiueoSelectFragment.class.getSimpleName();
 
-  public static final String RESULT_AIUEO = "aiueo";
-  public static final String RESULT_AIUEO_TAG = "aiueo_tag";
+  enum Mode {
+    NORMAL(),
+    DIALOG() {
+      @Override
+      void dismiss(DialogFragment f) { f.dismiss(); }
+    };
 
-  private static final String AIUEO =
-          "あa いi うu えe おo " + "かkaきkiくkuけkeこko" + "さsaしsiすsuせseそso" +
-          "たtaちtiつtuてteとto" + "なnaにniぬnuねneのno" + "はhaひhiふhuへheほho" +
-          "まmaみmiむmuめmeもmo" + "やya　  ゆyu　  よyo" + "らraりriるruれreろro" +
-          "わwaをwoんnn　  他zz";
+    void dismiss(DialogFragment f) { /*default: nothing*/ }
+  }
 
-  static AiueoSelectFragment newInstance(String requestKey, String selected) {
+  static AiueoSelectFragment newInstance(Mode mode) {
     AiueoSelectFragment fragment = new AiueoSelectFragment();
     Bundle args = new Bundle();
-    args.putString(ARG_REQUESTKEY, requestKey);
-    args.putString(ARG_SELECTED, selected);
+    args.putSerializable("mode", mode);
     fragment.setArguments(args);
     return fragment;
   }
 
+  private Mode mode = Mode.NORMAL;
   private Button latestSelect;
-  private Runnable closeProcess;
+  private int defaultColor = Color.BLACK;
 
-  @NonNull
+  // xml で 50 個ボタン定義を並べるのは流石に面倒なのでプログラムで生成
+  @Nullable
   @Override
-  public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-    closeProcess = () -> dismiss();
-    AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity())
-            .setView(createView())
-            .setNegativeButton("キャンセル", null);
-    return builder.create();
-  }
+  public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    Context context = container == null ? getContext() : container.getContext();
+    assert context != null;
 
-  private View createView() {
-    Context context = getContext();
+    MainViewModel viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
 
-    String requestKey = getArguments().getString(ARG_REQUESTKEY);
-    String selected = getArguments().getString(ARG_SELECTED);
+    if(getArguments() != null) {
+      mode = (Mode)getArguments().getSerializable("mode");
+    }
+    Log.d(LOG_TAG, "mode=" + mode);
 
     View.OnClickListener clickListener = v -> {
       Button button = (Button)v;
       changeSelected(button);
-      Bundle result = new Bundle();
-      result.putString(RESULT_AIUEO, button.getText().toString());
-      result.putString(RESULT_AIUEO_TAG, (String)button.getTag());
-      getParentFragmentManager().setFragmentResult(requestKey, result);
-      if(closeProcess != null) closeProcess.run();
+      Log.d(LOG_TAG, "this=" + AiueoSelectFragment.this + ", viewModel.setSelectedFromAiueo(" + button.getTag() + ")");
+      viewModel.setSelectedFromAiueo((Aiueo)button.getTag());
+      mode.dismiss(this);
     };
 
-    float density = context.getResources().getDisplayMetrics().density;
+    float density = context.getResources().getDisplayMetrics().density; //px->dp
     int width = (int)(60 * density);
     int height = (int)(60 * density);
+    int textSize = (int)(10 * density);
 
     ScrollView view = new ScrollView(context);
+    HorizontalScrollView hscroll = new HorizontalScrollView(context);
     GridLayout grid = new GridLayout(context);
     grid.setColumnCount(5);
-    for(int i=0, j=0; i<AIUEO.length(); i+=3, j++) {
-      if(AIUEO.charAt(i) == '　') continue; //全角スペース
-      String text = "" + AIUEO.charAt(i);
+    EnumMap<Aiueo,Button> bMap = new EnumMap<>(Aiueo.class);
+    for(int i=0, j=0; i<Aiueo.values().length; i++, j++) {
+      Aiueo aiueo = Aiueo.values()[i];
+      if(aiueo == Aiueo.ゆ || aiueo == Aiueo.よ || aiueo == Aiueo.他) j++; //ボタンの隙間を空ける(enum の並び順依存)
       Button button = new AppCompatButton(context);
       GridLayout.LayoutParams params = new GridLayout.LayoutParams();
       params.width = width;
@@ -79,24 +81,32 @@ public class AiueoSelectFragment extends DialogFragment {
       params.columnSpec = GridLayout.spec(j % 5);
       params.rowSpec = GridLayout.spec(j / 5);
       button.setLayoutParams(params);
-      button.setText(text);
-      button.setTextSize(30);
-      button.setTag(AIUEO.substring(i+1, i+3).trim());
+      button.setText(aiueo.toString());
+      button.setTextSize(textSize);
+      button.setTag(aiueo);
       button.setOnClickListener(clickListener);
-      if(text.equals(selected)) changeSelected(button);
       grid.addView(button);
+
+      bMap.put(aiueo, button);
+      defaultColor = button.getTextColors().getDefaultColor(); //どれでもいいのでとにかくデフォルトの色
     }
-    view.addView(grid);
+    hscroll.addView(grid);
+    view.addView(hscroll);
+
+    viewModel.getSelectedFromAiueo().observe(getViewLifecycleOwner(), aiueo -> changeSelected(bMap.get(aiueo)));
 
     return view;
   }
+
   private void changeSelected(Button button) {
     if(latestSelect != button) {
       if(latestSelect != null) {
-        latestSelect.setTextColor(button.getTextColors().getDefaultColor());
+        latestSelect.setTextColor(defaultColor);
       }
       latestSelect = button;
-      latestSelect.setTextColor(Color.RED);
+      if(latestSelect != null) {
+        latestSelect.setTextColor(Color.RED);
+      }
     }
   }
 }
