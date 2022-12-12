@@ -12,6 +12,11 @@ enum Aiueo {
   ら("ra"), り("ri"), る("ru"), れ("re"), ろ("ro"),
   わ("wa"), を("wo"), ん("nn"), 他("zz");
 
+  static Aiueo valueOf(char c) {
+    Aiueo aiueo = valueOf(String.valueOf(c));
+    return aiueo == null ? 他 : aiueo;
+  }
+
   final String tag;
 
   Aiueo(String tag) {

@@ -1,10 +1,6 @@
 package com.teratail.q_lm3admtis2c6ua;
 
-import android.util.Log;
-
 import androidx.lifecycle.*;
-
-import java.util.*;
 
 public class MainViewModel extends ViewModel {
   private static final String LOG_TAG = MainViewModel.class.getSimpleName();
@@ -14,30 +10,28 @@ public class MainViewModel extends ViewModel {
     this.mainModel = mainModel;
   }
 
-  private MutableLiveData<BooklistPage> booklistPageLiveData = new MutableLiveData<>(new BooklistPage(Collections.emptyList(), null, 1, 1));
-  LiveData<BooklistPage> getBooklistPage() {
-    return booklistPageLiveData;
-  }
-  void requestBookInfoList(Aiueo aiueo, int page) {
-    mainModel.requestBooklistPage(aiueo, page, booklistPage -> {
-      booklistPageLiveData.postValue(booklistPage);
-      Log.d(LOG_TAG, "maxPage=" + booklistPage.maxPages);
+  private final MutableLiveData<CardListWithAiueo> cardListWithAiueoLiveData = new MutableLiveData<>(null);
+  LiveData<CardListWithAiueo> getCardListWithAiueo() { return cardListWithAiueoLiveData; }
+  void requestCardListWithAiueo(Aiueo aiueo) {
+    mainModel.requestCardListWithAiueo(aiueo, cardListWithAiueo -> {
+      cardListWithAiueoLiveData.postValue(cardListWithAiueo);
     });
   }
 
-  private MutableLiveData<Aiueo> selectedFromAiueoLiveData = new MutableLiveData<>();
-  LiveData<Aiueo> getSelectedFromAiueo() {
-    return selectedFromAiueoLiveData;
+  private final MutableLiveData<Aiueo> selectedAiueoLiveData = new MutableLiveData<>();
+  LiveData<Aiueo> getSelectedAiueo() {
+    return selectedAiueoLiveData;
   }
-  void setSelectedFromAiueo(Aiueo aiueo) {
-    selectedFromAiueoLiveData.setValue(aiueo);
+  void setSelectedAiueo(Aiueo aiueo) {
+    selectedAiueoLiveData.setValue(aiueo);
   }
 
-  private MutableLiveData<BookInfo> selectedBookInfoLiveData = new MutableLiveData<>();
-  LiveData<BookInfo> getSelectedBookInfo() {
-    return selectedBookInfoLiveData;
+  private final MutableLiveData<CardSummary> selectedCardSummaryLiveData = new MutableLiveData<>();
+  LiveData<CardSummary> getSelectedCardSummary() {
+    return selectedCardSummaryLiveData;
   }
-  void setSelectedBookInfo(BookInfo bookInfo) {
-    selectedBookInfoLiveData.setValue(bookInfo);
+  void setSelectedCardSummary(CardSummary cardSummary) {
+    selectedCardSummaryLiveData.setValue(cardSummary);
   }
 }
+

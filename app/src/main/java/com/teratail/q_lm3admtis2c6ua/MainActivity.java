@@ -1,8 +1,6 @@
 package com.teratail.q_lm3admtis2c6ua;
 
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,13 +12,14 @@ import androidx.viewpager2.widget.ViewPager2;
 public class MainActivity extends AppCompatActivity {
   private static final String LOG_TAG = MainActivity.class.getSimpleName();
 
+  MainModel mainModel;
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
-    MainModel mainModel = new MainModel();
-    getLifecycle().addObserver(mainModel);
+    mainModel = new MainModel(this);
 
     FragmentManager fm = getSupportFragmentManager();
     MainViewModel viewModel = new ViewModelProvider(this).get(MainViewModel.class);
@@ -29,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
     ViewPager2 viewPager = findViewById(R.id.viewPager);
     viewPager.setAdapter(new ViewPagerAdapter(this));
 
-    viewModel.getSelectedBookInfo().observe(this, bookInfo -> {
+    viewModel.getSelectedCardSummary().observe(this, cardSummary -> {
       viewPager.setCurrentItem(1);
     });
   }
@@ -42,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
     @NonNull
     @Override
     public Fragment createFragment(int position) {
-      return position == 0 ? new BookListFragment() : new WebViewFragment();
+      return position == 0 ? new CardSummaryListFragment() : new WebViewFragment();
     }
 
     @Override

@@ -1,7 +1,6 @@
 package com.teratail.q_lm3admtis2c6ua;
 
 import android.annotation.SuppressLint;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.*;
 import android.widget.*;
@@ -13,44 +12,49 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.*;
 
-public class BookListFragment extends Fragment {
-  private static final String LOG_TAG = BookListFragment.class.getSimpleName();
+public class CardSummaryListFragment extends Fragment {
+  private static final String LOG_TAG = CardSummaryListFragment.class.getSimpleName();
 
-  public BookListFragment() {
-    super(R.layout.fragment_booklist);
+  public CardSummaryListFragment() {
+    super(R.layout.fragment_cardsummarylist);
   }
 
   @Override
   public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
     MainViewModel viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
 
+    TextView countText = view.findViewById(R.id.countText);
     Button button = view.findViewById(R.id.button);
     //xml 上に ( 直接 AiueoSelectFragment を指定してある FragmentContainerView の )ID があるなら, ダイアログは必要無い = null
     if(view.findViewById(R.id.aiueo_select) == null) {
-      button.setOnClickListener(v -> AiueoSelectFragment.newInstance(AiueoSelectFragment.Mode.DIALOG).show(getChildFragmentManager(), null));
+      button.setOnClickListener(v ->
+              AiueoSelectFragment.newInstance(AiueoSelectFragment.Mode.DIALOG).show(getChildFragmentManager(), null));
     }
 
-    viewModel.getSelectedFromAiueo().observe(getViewLifecycleOwner(), aiueo -> {
+    viewModel.getSelectedAiueo().observe(getViewLifecycleOwner(), aiueo -> {
       if(button.getTag() == aiueo) return;
       button.setTag(aiueo);
       button.setText(aiueo == null ? "(未選択)" : "" + aiueo);
-      viewModel.requestBookInfoList(aiueo, 1);
+      viewModel.requestCardListWithAiueo(aiueo);
     });
 
     RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
-    BookInfoAdapter adapter = new BookInfoAdapter(bookInfo -> {
-      viewModel.setSelectedBookInfo(bookInfo);
-    });
+    CardSummaryAdapter adapter = new CardSummaryAdapter(viewModel::setSelectedCardSummary);
     recyclerView.setAdapter(adapter);
-    viewModel.getBooklistPage().observe(getViewLifecycleOwner(), booklistPage -> {
-      adapter.setList(booklistPage.list);
+
+    viewModel.getCardListWithAiueo().observe(getViewLifecycleOwner(), cardListWithAiueo -> {
+      if(cardListWithAiueo == null) return;
+      if(cardListWithAiueo.aiueo == button.getTag()){
+        adapter.setList(cardListWithAiueo.list);
+        countText.setText("" + cardListWithAiueo.list.size());
+      }
     });
   }
 
-  private static class BookInfoAdapter extends RecyclerView.Adapter<BookInfoAdapter.ViewHolder> {
+  private static class CardSummaryAdapter extends RecyclerView.Adapter<CardSummaryAdapter.ViewHolder> {
     @FunctionalInterface
     interface RowClickListener {
-      void onClick(BookInfo bookInfo);
+      void onClick(CardSummary cardSummary);
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
@@ -62,19 +66,19 @@ public class BookListFragment extends Fragment {
         title = itemView.findViewById(R.id.title);
         subtitle = itemView.findViewById(R.id.subtitle);
         author = itemView.findViewById(R.id.author);
-        if(rowClickListener != null) itemView.setOnClickListener(v -> rowClickListener.onClick((BookInfo)itemView.getTag()));
+        if(rowClickListener != null) itemView.setOnClickListener(v -> rowClickListener.onClick((CardSummary)itemView.getTag()));
       }
     }
 
     private final RowClickListener rowClickListener;
-    private List<BookInfo> list = Collections.emptyList();
+    private List<CardSummary> list = Collections.emptyList();
 
-    public BookInfoAdapter(RowClickListener rowClickListener) {
+    public CardSummaryAdapter(RowClickListener rowClickListener) {
       this.rowClickListener = rowClickListener;
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    public void setList(List<BookInfo> list) {
+    public void setList(List<CardSummary> list) {
       this.list = new ArrayList<>(list); //防御コピー
       notifyDataSetChanged();
     }
@@ -88,14 +92,14 @@ public class BookListFragment extends Fragment {
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-      BookInfo bookInfo = list.get(position);
-      holder.itemView.setTag(bookInfo);
-      holder.num.setText(bookInfo.num + ".");
-      holder.title.setText(bookInfo.title);
-      holder.subtitle.setText(bookInfo.subtitle);
-      holder.author.setText(bookInfo.author);
+      CardSummary cardSummary = list.get(position);
+      holder.itemView.setTag(cardSummary);
+      holder.num.setText((position+1) + ".");
+      holder.title.setText(cardSummary.title);
+      holder.subtitle.setText(cardSummary.subtitle);
+      holder.author.setText(cardSummary.author);
 
-      holder.subtitle.setVisibility(bookInfo.subtitle.isEmpty() ? View.GONE : View.VISIBLE);
+      holder.subtitle.setVisibility(cardSummary.subtitle.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     @Override

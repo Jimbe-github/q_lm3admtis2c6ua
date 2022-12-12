@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import java.util.*;
 
+//普通にフラグメントとしての使用の他、ダイアログとしても使用可能(その場合は newInstance(Mode.DIALOG) を使用すること)
 public class AiueoSelectFragment extends DialogFragment {
   private static final String LOG_TAG = AiueoSelectFragment.class.getSimpleName();
 
@@ -27,7 +28,7 @@ public class AiueoSelectFragment extends DialogFragment {
     void dismiss(DialogFragment f) { /*default: nothing*/ }
   }
 
-  static AiueoSelectFragment newInstance(Mode mode) {
+  static AiueoSelectFragment newInstance(@NonNull Mode mode) {
     AiueoSelectFragment fragment = new AiueoSelectFragment();
     Bundle args = new Bundle();
     args.putSerializable("mode", mode);
@@ -56,45 +57,47 @@ public class AiueoSelectFragment extends DialogFragment {
     View.OnClickListener clickListener = v -> {
       Button button = (Button)v;
       changeSelected(button);
-      viewModel.setSelectedFromAiueo((Aiueo)button.getTag());
+      viewModel.setSelectedAiueo((Aiueo)button.getTag());
       mode.dismiss(this);
     };
 
-    float density = context.getResources().getDisplayMetrics().density; //dp->px
-    int width = (int)(60 * density);
-    int height = (int)(60 * density);
-    int textSize = (int)(30 * density);
+    EnumMap<Aiueo,Button> bMap = new EnumMap<>(Aiueo.class);
 
-    ScrollView view = new ScrollView(context);
-    HorizontalScrollView hscroll = new HorizontalScrollView(context);
     GridLayout grid = new GridLayout(context);
     grid.setColumnCount(5);
-    EnumMap<Aiueo,Button> bMap = new EnumMap<>(Aiueo.class);
     for(int i=0, j=0; i<Aiueo.values().length; i++, j++) {
       Aiueo aiueo = Aiueo.values()[i];
       if(aiueo == Aiueo.ゆ || aiueo == Aiueo.よ || aiueo == Aiueo.他) j++; //ボタンの隙間を空ける(enum の並び順依存)
-      Button button = new AppCompatButton(context);
-      GridLayout.LayoutParams params = new GridLayout.LayoutParams();
-      params.width = width; //[px]
-      params.height = height; //[px]
-      params.columnSpec = GridLayout.spec(j % 5);
-      params.rowSpec = GridLayout.spec(j / 5);
-      button.setLayoutParams(params);
-      button.setText(aiueo.toString());
-      button.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize); //[px]
-      button.setTag(aiueo);
+      Button button = createButton(grid, 60, 60, aiueo.toString(), 30, j%5, j/5);
       button.setOnClickListener(clickListener);
+      button.setTag(aiueo);
       grid.addView(button);
-
       bMap.put(aiueo, button);
       defaultColor = button.getTextColors().getDefaultColor(); //どれでもいいのでとにかくデフォルトの色
     }
+
+    viewModel.getSelectedAiueo().observe(getViewLifecycleOwner(), aiueo -> changeSelected(bMap.get(aiueo)));
+
+    HorizontalScrollView hscroll = new HorizontalScrollView(context);
     hscroll.addView(grid);
+    ScrollView view = new ScrollView(context);
     view.addView(hscroll);
-
-    viewModel.getSelectedFromAiueo().observe(getViewLifecycleOwner(), aiueo -> changeSelected(bMap.get(aiueo)));
-
     return view;
+  }
+
+  private Button createButton(ViewGroup parent, int width_dp, int height_dp, String text, int textSize_dp, int column, int row) {
+    float density = parent.getContext().getResources().getDisplayMetrics().density; //dp->px
+    GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+    params.width = (int)(width_dp * density); //[px]
+    params.height = (int)(height_dp * density); //[px]
+    params.columnSpec = GridLayout.spec(column);
+    params.rowSpec = GridLayout.spec(row);
+
+    Button button = new AppCompatButton(parent.getContext());
+    button.setLayoutParams(params);
+    button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSize_dp);
+    button.setText(text);
+    return button;
   }
 
   private void changeSelected(Button button) {

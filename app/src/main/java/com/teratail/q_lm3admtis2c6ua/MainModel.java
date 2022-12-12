@@ -1,207 +1,88 @@
 package com.teratail.q_lm3admtis2c6ua;
 
-import android.net.Uri;
-import android.util.Log;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.*;
 
 import androidx.annotation.NonNull;
-import androidx.lifecycle.*;
+import androidx.work.*;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.*;
-import org.jsoup.select.Elements;
-
-import java.io.*;
-import java.net.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.function.Consumer;
-import java.util.regex.*;
 
-class BooklistPage {
-  final List<BookInfo> list;
-  final Aiueo aiueo;
-  final int currentpage, maxPages;
-
-  BooklistPage(List<BookInfo> list, Aiueo aiueo, int currentPage, int maxPages) {
-    this.list = Collections.unmodifiableList(list);
-    this.aiueo = aiueo;
-    this.currentpage = currentPage;
-    this.maxPages = maxPages;
+class CardSummary {
+  final String title, subtitle, url, author;
+  CardSummary(String title, String subtitle, String url, String author) {
+    this.title = title;
+    this.subtitle = subtitle;
+    this.url = url;
+    this.author = author;
+  }
+  @NonNull
+  @Override
+  public String toString() {
+    return new StringBuilder(getClass().getSimpleName()).append('@').append(hashCode())
+            .append("[title=").append(title)
+            .append(",subtitle=").append(subtitle)
+            .append(",url=").append(url)
+            .append(",author=").append(author)
+            .append(']').toString();
   }
 }
 
-public class MainModel implements DefaultLifecycleObserver {
+class CardListWithAiueo {
+  final Aiueo aiueo;
+  final List<CardSummary> list;
+  CardListWithAiueo(Aiueo aiueo, List<CardSummary> list) {
+    this.aiueo = aiueo;
+    this.list = Collections.unmodifiableList(list);
+  }
+}
+
+public class MainModel {
   private static final String LOG_TAG = MainModel.class.getSimpleName();
 
-  private final ExecutorService executor = new DownloadExecutor();
-  private Future<?> future = null;
+  private DatabaseHelper helper;
+  private WorkManager workManager;
 
-  @Override
-  public void onStop(@NonNull LifecycleOwner owner) {
-    DefaultLifecycleObserver.super.onStop(owner);
-    //Log.d(LOG_TAG, "onStop: executor shutdown now.");
-    if(future != null) future.cancel(true);
-    executor.shutdownNow();
+  MainModel(Context context) {
+    helper = new DatabaseHelper(context);
+
+    workManager = WorkManager.getInstance(context);
+
+    //最新チェック・ダウンロード
+    workManager.enqueue(OneTimeWorkRequest.from(DownloadWorker.class));
   }
 
-  private BooklistPage booklistPageCache = null;
-  void requestBooklistPage(Aiueo aiueo, int page, Consumer<BooklistPage> callback) {
-    //TODO: まともにキャッシュするならサーバ側の更新日付のチェックとか・・・
-    if(booklistPageCache != null && booklistPageCache.aiueo == aiueo && booklistPageCache.currentpage == page) {
-      callback.accept(booklistPageCache);
-    }
-    if(future != null) {
-      future.cancel(true);
-      future = null;
-    }
-    if(aiueo != null) {
-      final int currentPage = page > 1 ? page : 1;
-      URL url = createUrl(aiueo, page);
-      future = executor.submit(new HttpRequest(createUrl(aiueo, page), html -> {
-        Document document = Jsoup.parse(html);
-        int maxPage = getPageLinkMax(document);
-        if(maxPage == currentPage-1) maxPage = currentPage; //currentPage のリンクは無い為、最終ページの場合リンクの最大は1少ないので補正
-        callback.accept(new BooklistPage(parseList(document, url), aiueo, currentPage, maxPage));
-      }));
-    }
-  }
+  void requestCardListWithAiueo(Aiueo aiueo, Consumer<CardListWithAiueo> callback) {
+    List<CardSummary> list = new ArrayList<>();
+    SQLiteDatabase db = helper.getReadableDatabase();
 
-  private URL createUrl(Aiueo aiueo, int page) {
-    try {
-      String urltext = "https://www.aozora.gr.jp/index_pages/sakuhin_" + aiueo.tag + page + ".html";
-      return new URL(urltext);
-    } catch(MalformedURLException e) {
-      e.printStackTrace();
+    String selection = "c.sort_title like ? || '%'";
+    String[] selectionArgs = new String[]{"" + aiueo};
+    if(aiueo == Aiueo.他) {
+      selection = "(c.sort_title == '' or INSTR(?, SUBSTR(c.sort_title,1,1)) == 0)";
+      StringBuilder sb = new StringBuilder();
+      for(Aiueo a : Aiueo.values()) if(a != Aiueo.他) sb.append(a.toString());
+      selectionArgs = new String[]{sb.toString()};
     }
-    return null;
-  }
-
-  private static class DownloadExecutor extends ThreadPoolExecutor {
-    interface Cancellable<T> extends Callable<T> {
-      void cancel();
-      RunnableFuture<T> newTask();
-    }
-    static abstract class CloseableCancellable<T> implements Cancellable<T> {
-      protected Closeable closeable;
-      protected synchronized void setClosable(Closeable closeable) {
-        this.closeable = closeable;
-      }
-      @Override
-      public synchronized void cancel() {
-        if(closeable != null) {
-          try {
-            closeable.close();
-            closeable = null;
-          } catch(IOException ignore) {
-          }
-        }
-      }
-      @Override
-      public RunnableFuture<T> newTask() {
-        return new FutureTask<T>(this) {
-          @Override
-          public boolean cancel(boolean mayInterruptIfRunning) {
-            CloseableCancellable.this.cancel();
-            return super.cancel(mayInterruptIfRunning);
-          }
-        };
+    try(Cursor cursor = db.rawQuery("SELECT" +
+            " c.title, c.subtitle, c.card_url, a.family_name || ' ' || a.personal_name as author" +
+            " FROM card as c INNER JOIN author as a ON c.author_id = a._id" +
+            " WHERE " + selection +
+            " ORDER BY c.sort_title", selectionArgs)) {
+      int titleIndex = cursor.getColumnIndex("title");
+      int subtitleIndex = cursor.getColumnIndex("subtitle");
+      int urlIndex = cursor.getColumnIndex("card_url");
+      int authorIndex = cursor.getColumnIndex("author");
+      while(cursor.moveToNext()) {
+        String title = cursor.getString(titleIndex);
+        String subtitle = cursor.getString(subtitleIndex);
+        String url = cursor.getString(urlIndex);
+        String author = cursor.getString(authorIndex);
+        list.add(new CardSummary(title, subtitle, url, author));
       }
     }
-
-    public DownloadExecutor() {
-      super(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
-    }
-    @Override
-    protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
-      if(callable instanceof Cancellable) {
-        return ((Cancellable<T>)callable).newTask();
-      }
-      return super.newTaskFor(callable);
-    }
-  }
-
-  private static class HttpRequest extends DownloadExecutor.CloseableCancellable<Void> {
-    private static final String LOG_TAG = HttpRequest.class.getSimpleName();
-    private final URL url;
-    private final Consumer<String> postFunc;
-
-    HttpRequest(URL url, Consumer<String> postFunc) {
-      this.url = url;
-      this.postFunc = postFunc;
-    }
-
-    @Override
-    public Void call() {
-      try {
-        Log.d(LOG_TAG, "url="+url);
-        HttpURLConnection con = (HttpURLConnection)url.openConnection();
-        con.setRequestMethod("GET");
-        con.connect();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try(InputStream is = new BufferedInputStream(con.getInputStream())) {
-          setClosable(is);
-          byte[] buf = new byte[4096]; //テキトウ
-          for(int size; (size = is.read(buf)) >= 0; ) baos.write(buf, 0, size);
-        } finally {
-          con.disconnect();
-        }
-        executePost(baos.toString("UTF-8"));
-        return null;
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-      executePost("");
-      return null;
-    }
-    private void executePost(String value) {
-      postFunc.accept(value);
-    }
-  }
-
-  private List<BookInfo> parseList(Document doc, URL baseUrl) {
-    List<BookInfo> list = new ArrayList<>();
-
-    Elements rows = doc.select("table.list tr:not(:first-child)");
-    for(Element row : rows) {
-      Elements tds = row.select("td");
-      try {
-        int num = Integer.parseInt(tds.get(0).text()); //番号
-        Element titleElem = tds.get(1); //<a href="～">タイトル</a><br>サブタイトル
-        Elements link = titleElem.select("a");
-        String title = link.text().trim(); //タイトル
-        String href = link.attr("href");
-        URL url = new URL(baseUrl, href);
-        String[] titles = titleElem.html().split("<br>", 2);
-        String subtitle = titles.length > 1 ? titles[1].trim() : ""; //サブタイトル
-        String author = tds.get(3).text().trim(); //著者名
-        BookInfo bookInfo = new BookInfo(num, title, url, subtitle, author);
-        //Log.d(LOG_TAG, ""+bookInfo);
-        list.add(bookInfo);
-      } catch(NumberFormatException e) { //番号が数字で無かったら書籍データでは無い
-        //continue;
-      } catch(MalformedURLException e) { //リンクが変?
-        Log.w(LOG_TAG, e.toString());
-      }
-    }
-    return list;
-  }
-
-  private int getPageLinkMax(Document doc) {
-    int count = 1;
-    Elements links = doc.select("a[href^=sakuhin_]");
-    Pattern p = Pattern.compile("sakuhin_[a-z]{1,2}(\\d+)\\.html");
-    for(Element link : links) {
-      String href = link.attr("href");
-      //Log.d(LOG_TAG,"href="+href);
-      Matcher m = p.matcher(href);
-      if(m.matches()) {
-        try {
-          int num = Integer.parseInt(Objects.requireNonNull(m.group(1)));
-          count = Math.max(count, num);
-        } catch(NumberFormatException ignore) { //念の為
-        }
-      }
-    }
-    return count;
+    callback.accept(new CardListWithAiueo(aiueo, list));
   }
 }
