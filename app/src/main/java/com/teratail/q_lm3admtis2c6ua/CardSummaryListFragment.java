@@ -9,6 +9,7 @@ import androidx.annotation.*;
 import androidx.fragment.app.*;
 import androidx.lifecycle.*;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.WorkInfo;
 
 import java.util.*;
 
@@ -48,6 +49,14 @@ public class CardSummaryListFragment extends Fragment {
         adapter.setList(cardListWithAiueo.list);
         countText.setText("" + cardListWithAiueo.list.size());
       }
+    });
+
+    viewModel.getDownload().observe(getViewLifecycleOwner(), workInfoList -> {
+      Aiueo aiueo = (Aiueo)button.getTag();
+      if(aiueo == null) return;
+      if(workInfoList == null || workInfoList.size() == 0) return;
+      WorkInfo workInfo = workInfoList.get(0);
+      if(workInfo.getState().isFinished()) viewModel.requestCardListWithAiueo(aiueo);
     });
   }
 

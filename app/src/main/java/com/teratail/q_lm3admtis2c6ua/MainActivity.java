@@ -5,7 +5,7 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.*;
-import androidx.lifecycle.*;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -21,9 +21,10 @@ public class MainActivity extends AppCompatActivity {
 
     mainModel = new MainModel(this);
 
-    FragmentManager fm = getSupportFragmentManager();
     MainViewModel viewModel = new ViewModelProvider(this).get(MainViewModel.class);
     viewModel.setModel(mainModel);
+
+    viewModel.setDownloadLiveData(mainModel.requestDownloadWork()); //ダウンロード開始
 
     ViewPager2 viewPager = findViewById(R.id.viewPager);
     viewPager.setAdapter(new ViewPagerAdapter(this));

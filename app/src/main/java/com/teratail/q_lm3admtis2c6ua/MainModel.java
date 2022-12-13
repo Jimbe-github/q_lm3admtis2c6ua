@@ -2,9 +2,10 @@ package com.teratail.q_lm3admtis2c6ua;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.database.sqlite.*;
+import android.database.sqlite.SQLiteDatabase;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.LiveData;
 import androidx.work.*;
 
 import java.util.*;
@@ -46,15 +47,20 @@ public class MainModel {
   private WorkManager workManager;
 
   MainModel(Context context) {
-    helper = new DatabaseHelper(context);
-
+    helper = DatabaseHelper.getInstance(context);
     workManager = WorkManager.getInstance(context);
-
-    //最新チェック・ダウンロード
-    workManager.enqueue(OneTimeWorkRequest.from(DownloadWorker.class));
   }
 
-  void requestCardListWithAiueo(Aiueo aiueo, Consumer<CardListWithAiueo> callback) {
+  LiveData<List<WorkInfo>> requestDownloadWork() {
+    OneTimeWorkRequest workRequest = new OneTimeWorkRequest
+            .Builder(DownloadWorker.class)
+            .addTag("downloadWork")
+            .build();
+    workManager.enqueue(workRequest);
+    return workManager.getWorkInfosByTagLiveData("downloadWork");
+  }
+
+  void requestCardListWithAiueo(@NonNull Aiueo aiueo, @NonNull Consumer<CardListWithAiueo> callback) {
     List<CardSummary> list = new ArrayList<>();
     SQLiteDatabase db = helper.getReadableDatabase();
 

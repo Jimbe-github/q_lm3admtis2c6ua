@@ -1,6 +1,10 @@
 package com.teratail.q_lm3admtis2c6ua;
 
+import androidx.annotation.NonNull;
 import androidx.lifecycle.*;
+import androidx.work.WorkInfo;
+
+import java.util.List;
 
 public class MainViewModel extends ViewModel {
   private static final String LOG_TAG = MainViewModel.class.getSimpleName();
@@ -10,9 +14,13 @@ public class MainViewModel extends ViewModel {
     this.mainModel = mainModel;
   }
 
+  private LiveData<List<WorkInfo>> downloadLiveData;
+  void setDownloadLiveData(LiveData<List<WorkInfo>> workInfoListLiveData) { downloadLiveData = workInfoListLiveData; }
+  LiveData<List<WorkInfo>> getDownload() { return downloadLiveData; }
+
   private final MutableLiveData<CardListWithAiueo> cardListWithAiueoLiveData = new MutableLiveData<>(null);
   LiveData<CardListWithAiueo> getCardListWithAiueo() { return cardListWithAiueoLiveData; }
-  void requestCardListWithAiueo(Aiueo aiueo) {
+  void requestCardListWithAiueo(@NonNull Aiueo aiueo) {
     mainModel.requestCardListWithAiueo(aiueo, cardListWithAiueo -> {
       cardListWithAiueoLiveData.postValue(cardListWithAiueo);
     });

@@ -15,13 +15,17 @@ import java.util.zip.*;
 
 public class DownloadWorker extends Worker {
   private static final String LOG_TAG = DownloadWorker.class.getSimpleName();
+  private static final String TARGET_URL = "https://www.aozora.gr.jp/index_pages/list_person_all_extended_utf8.zip";
+  private static final String TARGET_FILE = "list_person_all_extended_utf8.csv";
 
+  private URL url;
   private DatabaseHelper helper;
 
-  public DownloadWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
+  public DownloadWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) throws MalformedURLException {
     super(context, workerParams);
 
-    helper = new DatabaseHelper(context);
+    url = new URL(TARGET_URL);
+    helper = DatabaseHelper.getInstance(context);
   }
 
   @NonNull
@@ -29,7 +33,6 @@ public class DownloadWorker extends Worker {
   public Result doWork() {
     Log.d(LOG_TAG, "start");
     try {
-      URL url = new URL("https://www.aozora.gr.jp/index_pages/list_person_all_extended_utf8.zip");
       Log.d(LOG_TAG, "url=" + url);
       HttpURLConnection con = (HttpURLConnection) url.openConnection();
       con.setRequestMethod("GET");
@@ -42,7 +45,7 @@ public class DownloadWorker extends Worker {
           ZipInputStream zis = new ZipInputStream(new BufferedInputStream(con.getInputStream()));
           try {
             for(ZipEntry entry; (entry = zis.getNextEntry()) != null; ) {
-              if(entry != null && entry.getName().equals("list_person_all_extended_utf8.csv")) {
+              if(entry != null && entry.getName().equals(TARGET_FILE)) {
                 SQLiteDatabase db = helper.getWritableDatabase();
                 db.beginTransaction();
                 try {

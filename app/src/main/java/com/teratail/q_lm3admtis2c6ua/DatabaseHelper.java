@@ -1,12 +1,24 @@
 package com.teratail.q_lm3admtis2c6ua;
 
+import android.app.Application;
 import android.content.Context;
 import android.database.sqlite.*;
 
 import androidx.annotation.Nullable;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
-  public DatabaseHelper(@Nullable Context context) {
+  private static DatabaseHelper instance;
+
+  /**
+   * @param context Context
+   * @return object of DatabaseHelper
+   */
+  static DatabaseHelper getInstance(Context context) {
+    if(instance == null) instance = new DatabaseHelper(context.getApplicationContext());
+    return instance;
+  }
+
+  private DatabaseHelper(@Nullable Context context) {
     super(context, "aozora.db", null, 1);
   }
 
