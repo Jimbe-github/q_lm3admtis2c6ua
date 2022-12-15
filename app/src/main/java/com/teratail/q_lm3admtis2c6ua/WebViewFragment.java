@@ -21,8 +21,8 @@ public class WebViewFragment extends Fragment {
 
     WebView webview = view.findViewById(R.id.webview);
 
-    viewModel.getSelectedCardSummary().observe(getViewLifecycleOwner(), cardSummary -> {
-      webview.loadUrl(cardSummary.url);
+    viewModel.getSelectedCardUrl().observe(getViewLifecycleOwner(), url -> {
+      webview.loadUrl(url);
     });
   }
 }

@@ -1,12 +1,14 @@
 package com.teratail.q_lm3admtis2c6ua;
 
-import androidx.annotation.NonNull;
+import android.database.*;
+
 import androidx.lifecycle.*;
 import androidx.work.WorkInfo;
 
 import java.util.List;
 
 public class MainViewModel extends ViewModel {
+  @SuppressWarnings("unused")
   private static final String LOG_TAG = MainViewModel.class.getSimpleName();
 
   private MainModel mainModel;
@@ -16,13 +18,38 @@ public class MainViewModel extends ViewModel {
 
   private LiveData<List<WorkInfo>> downloadLiveData;
   void setDownloadLiveData(LiveData<List<WorkInfo>> workInfoListLiveData) { downloadLiveData = workInfoListLiveData; }
-  LiveData<List<WorkInfo>> getDownload() { return downloadLiveData; }
+  LiveData<List<WorkInfo>> getDownloadWorkInfo() { return downloadLiveData; }
 
-  private final MutableLiveData<CardListWithAiueo> cardListWithAiueoLiveData = new MutableLiveData<>(null);
-  LiveData<CardListWithAiueo> getCardListWithAiueo() { return cardListWithAiueoLiveData; }
-  void requestCardListWithAiueo(@NonNull Aiueo aiueo) {
-    mainModel.requestCardListWithAiueo(aiueo, cardListWithAiueo -> {
-      cardListWithAiueoLiveData.postValue(cardListWithAiueo);
+  private class CursorContentObserver extends ContentObserver {
+    private final Aiueo aiueo;
+
+    CursorContentObserver(Aiueo aiueo) {
+      super(null);
+      this.aiueo = aiueo;
+    }
+    @Override
+    public void onChange(boolean selfChange) {
+      if(aiueo == null) return;
+      requestCardSummaryCursor(aiueo);
+    }
+  }
+  private CursorContentObserver cursorContentObserver = null;
+
+  private final MutableLiveData<Cursor> cardSummaryCursorLiveData = new MutableLiveData<>(null);
+  LiveData<Cursor> getCardSummaryCursor() { return cardSummaryCursorLiveData; }
+  void requestCardSummaryCursor(Aiueo aiueo) {
+    mainModel.requestCardSummaryCursor(aiueo, cursor -> {
+      Cursor old = cardSummaryCursorLiveData.getValue();
+      if(old == cursor) return;
+      if(old != null) {
+        old.unregisterContentObserver(cursorContentObserver);
+        old.close();
+      }
+      if(cursor != null) {
+        cursorContentObserver = new CursorContentObserver(aiueo);
+        cursor.registerContentObserver(cursorContentObserver);
+      }
+      cardSummaryCursorLiveData.postValue(cursor);
     });
   }
 
@@ -34,12 +61,23 @@ public class MainViewModel extends ViewModel {
     selectedAiueoLiveData.setValue(aiueo);
   }
 
-  private final MutableLiveData<CardSummary> selectedCardSummaryLiveData = new MutableLiveData<>();
-  LiveData<CardSummary> getSelectedCardSummary() {
-    return selectedCardSummaryLiveData;
+  private final MutableLiveData<String> selectedCardUrlLiveData = new MutableLiveData<>();
+  LiveData<String> getSelectedCardUrl() {
+    return selectedCardUrlLiveData;
   }
-  void setSelectedCardSummary(CardSummary cardSummary) {
-    selectedCardSummaryLiveData.setValue(cardSummary);
+  void setSelectedCardSummary(String url) {
+    selectedCardUrlLiveData.setValue(url);
+  }
+
+  @Override
+  protected void onCleared() {
+    super.onCleared();
+    Cursor cursor = cardSummaryCursorLiveData.getValue();
+    if(cursor != null) {
+      cardSummaryCursorLiveData.setValue(null);
+      cursor.unregisterContentObserver(cursorContentObserver);
+      cursor.close();
+    }
   }
 }
 

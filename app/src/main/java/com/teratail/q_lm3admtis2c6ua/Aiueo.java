@@ -1,25 +1,22 @@
 package com.teratail.q_lm3admtis2c6ua;
 
-enum Aiueo {
-  あ("a"), い("i"), う("u"), え("e"), お("o"),
-  か("ka"), き("ki"), く("ku"), け("ke"), こ("ko"),
-  さ("sa"), し("si"), す("su"), せ("se"), そ("so"),
-  た("ta"), ち("ti"), つ("tu"), て("te"), と("to"),
-  な("na"), に("ni"), ぬ("nu"), ね("ne"), の("no"),
-  は("ha"), ひ("hi"), ふ("hu"), へ("he"), ほ("ho"),
-  ま("ma"), み("mi"), む("mu"), め("me"), も("mo"),
-  や("ya"), ゆ("yu"), よ("yo"),
-  ら("ra"), り("ri"), る("ru"), れ("re"), ろ("ro"),
-  わ("wa"), を("wo"), ん("nn"), 他("zz");
+public enum Aiueo {
+  あ, い, う, え, お,
+  か, き, く, け, こ,
+  さ, し, す, せ, そ,
+  た, ち, つ, て, と,
+  な, に, ぬ, ね, の,
+  は, ひ, ふ, へ, ほ,
+  ま, み, む, め, も,
+  や, ゆ, よ,
+  ら, り, る, れ, ろ,
+  わ, を, ん, 他;
 
-  static Aiueo valueOf(char c) {
-    Aiueo aiueo = valueOf(String.valueOf(c));
-    return aiueo == null ? 他 : aiueo;
-  }
-
-  final String tag;
-
-  Aiueo(String tag) {
-    this.tag = tag;
+  /** Aiueo.他 以外の要素を区切り無く文字列として並べたもの */
+  public static final String VALID_STRING;
+  static {
+    StringBuilder sb = new StringBuilder();
+    for(Aiueo aiueo : values()) if(aiueo != Aiueo.他) sb.append(aiueo.toString());
+    VALID_STRING = sb.toString();
   }
 }

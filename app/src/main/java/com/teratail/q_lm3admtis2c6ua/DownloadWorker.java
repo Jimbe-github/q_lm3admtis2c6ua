@@ -1,8 +1,12 @@
 package com.teratail.q_lm3admtis2c6ua;
 
-import android.content.Context;
+import static com.teratail.q_lm3admtis2c6ua.AozoraDatabase.Author;
+import static com.teratail.q_lm3admtis2c6ua.AozoraDatabase.Card;
+import static com.teratail.q_lm3admtis2c6ua.AozoraDatabase.Download;
+
+import android.content.*;
 import android.database.Cursor;
-import android.database.sqlite.*;
+import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -14,18 +18,22 @@ import java.util.*;
 import java.util.zip.*;
 
 public class DownloadWorker extends Worker {
+  @SuppressWarnings("unused")
   private static final String LOG_TAG = DownloadWorker.class.getSimpleName();
+
   private static final String TARGET_URL = "https://www.aozora.gr.jp/index_pages/list_person_all_extended_utf8.zip";
   private static final String TARGET_FILE = "list_person_all_extended_utf8.csv";
 
   private URL url;
   private DatabaseHelper helper;
+  private ContentResolver resolver;
 
   public DownloadWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) throws MalformedURLException {
     super(context, workerParams);
 
     url = new URL(TARGET_URL);
     helper = DatabaseHelper.getInstance(context);
+    resolver = context.getContentResolver();
   }
 
   @NonNull
@@ -46,15 +54,10 @@ public class DownloadWorker extends Worker {
           try {
             for(ZipEntry entry; (entry = zis.getNextEntry()) != null; ) {
               if(entry != null && entry.getName().equals(TARGET_FILE)) {
-                SQLiteDatabase db = helper.getWritableDatabase();
-                db.beginTransaction();
-                try {
-                  parseCsv(db, new BufferedReader(new InputStreamReader(zis)));
-                  setDownloaded(db, lastModified);
-                  db.setTransactionSuccessful();
-                } finally {
-                  db.endTransaction();
-                }
+                ArrayList<ContentProviderOperation> operations = new ArrayList<>();
+                parseCsv(operations, new BufferedReader(new InputStreamReader(zis)));
+                setDownloaded(operations, lastModified);
+                resolver.applyBatch(AozoraContentProvider.AUTHORITY, operations);
                 break;
               }
               zis.closeEntry();
@@ -74,7 +77,7 @@ public class DownloadWorker extends Worker {
     return Result.success();
   }
 
-  private void parseCsv(SQLiteDatabase db, Reader r) throws IOException {
+  private void parseCsv(ArrayList<ContentProviderOperation> operations, Reader r) throws IOException {
     LineFeedFactionReader reader = new LineFeedFactionReader(r);
     CsvParser parser = new CsvParser();
 
@@ -88,7 +91,7 @@ public class DownloadWorker extends Worker {
       tokens.add(token);
       if(tokens.size() == columns.size()) {
         try {
-          insertDatabase(db, tokens);
+          insertDatabase(operations, tokens);
         } catch(Exception e) {
           Log.d(LOG_TAG, "tokens=" + tokens.toString());
           throw e;
@@ -105,11 +108,13 @@ public class DownloadWorker extends Worker {
       return cursor.moveToNext();
     }
   }
-  private void setDownloaded(SQLiteDatabase db, String lastModified) {
-    db.execSQL("INSERT OR REPLACE INTO download (last_modified) VALUES (?)", new String[]{lastModified});
+  private void setDownloaded(ArrayList<ContentProviderOperation> operations, String lastModified) {
+    operations.add(ContentProviderOperation.newUpdate(Download.CONTENT_URI)
+            .withValue(Download.LAST_MODIFIED, lastModified)
+            .build());
   }
 
-  private void insertDatabase(SQLiteDatabase db, List<String> tokens) {
+  private void insertDatabase(ArrayList<ContentProviderOperation> operations, List<String> tokens) {
     long cardId = Long.parseLong(tokens.get(0)); //作品ID
     String title = tokens.get(1); //作品名
     String sortTitle = tokens.get(3); //ソート用読み
@@ -130,52 +135,37 @@ public class DownloadWorker extends Worker {
     String htmlLastUpdate = tokens.get(51); //(x)htmlファイル最終更新日
     String htmlCharset = tokens.get(52); //(x)htmlファイル符号化方式
 
-    insertAuthor(db, authorId, authorFamily, sortAuthorFamily, authorPersonal, sortAuthorPersonal);
-    insertCard(db, cardId, title, sortTitle, subtitle, cardUrl, authorId);
-    insertFile(db, cardId, "text", textUrl, textLastUpdate, textCharset);
-    insertFile(db, cardId, "html", htmlUrl, htmlLastUpdate, htmlCharset);
-  }
+    operations.add(ContentProviderOperation.newInsert(Author.CONTENT_URI)
+            .withValue(Author._ID, authorId)
+            .withValue(Author.FAMILY_NAME, authorFamily)
+            .withValue(Author.SORT_FAMILY_NAME, sortAuthorFamily)
+            .withValue(Author.PERSONAL_NAME, authorPersonal)
+            .withValue(Author.SORT_PERSONAL_NAME, sortAuthorPersonal)
+            .build());
 
-  private void insertCard(SQLiteDatabase db, long cardId, String title, String sortTitle, String subtitle, String cardUrl, long authorId) {
-    SQLiteStatement stmt = db.compileStatement("INSERT OR REPLACE INTO card (_id, title, sort_title, subtitle, card_url, author_id) VALUES (?,?,?,?,?,?)");
-    try {
-      stmt.bindLong(1, cardId);
-      stmt.bindString(2, title);
-      stmt.bindString(3, sortTitle);
-      stmt.bindString(4, subtitle);
-      stmt.bindString(5, cardUrl);
-      stmt.bindLong(6, authorId);
-      stmt.executeInsert();
-    } finally {
-      stmt.close();
-    }
-  }
+    operations.add(ContentProviderOperation.newInsert(Card.CONTENT_URI)
+            .withValue(Card._ID, cardId)
+            .withValue(Card.TITLE, title)
+            .withValue(Card.SORT_TITLE, sortTitle)
+            .withValue(Card.SUBTITLE, subtitle)
+            .withValue(Card.CARD_URL, cardUrl)
+            .withValue(Card.AUTHOR_ID, authorId)
+            .build());
 
-  private void insertAuthor(SQLiteDatabase db, long authorId, String familyName, String sortFamilyName, String personalName, String sortPersonalName) {
-    SQLiteStatement stmt = db.compileStatement("INSERT OR REPLACE INTO author (_id, family_name, sort_family_name, personal_name, sort_personal_name) VALUES (?,?,?,?,?)");
-    try {
-      stmt.bindLong(1, authorId);
-      stmt.bindString(2, familyName);
-      stmt.bindString(3, sortFamilyName);
-      stmt.bindString(4, personalName);
-      stmt.bindString(5, sortPersonalName);
-      stmt.executeInsert();
-    } finally {
-      stmt.close();
-    }
-  }
+    operations.add(ContentProviderOperation.newInsert(AozoraDatabase.File.CONTENT_URI)
+            .withValue(AozoraDatabase.File.CARD_ID, cardId)
+            .withValue(AozoraDatabase.File.KIND, "text")
+            .withValue(AozoraDatabase.File.URL, textUrl)
+            .withValue(AozoraDatabase.File.LAST_UPDATE, textLastUpdate)
+            .withValue(AozoraDatabase.File.CHARSET, textCharset)
+            .build());
 
-  private void insertFile(SQLiteDatabase db, long cardId, String kind, String url, String last_update, String charset) {
-    SQLiteStatement stmt = db.compileStatement("INSERT OR REPLACE INTO file" + " (card_id, kind, url, last_update, charset) VALUES (?,?,?,?,?)");
-    try {
-      stmt.bindLong(1, cardId);
-      stmt.bindString(2, kind);
-      stmt.bindString(3, url);
-      stmt.bindString(4, last_update);
-      stmt.bindString(5, charset);
-      stmt.executeInsert();
-    } finally {
-      stmt.close();
-    }
+    operations.add(ContentProviderOperation.newInsert(AozoraDatabase.File.CONTENT_URI)
+            .withValue(AozoraDatabase.File.CARD_ID, cardId)
+            .withValue(AozoraDatabase.File.KIND, "html")
+            .withValue(AozoraDatabase.File.URL, htmlUrl)
+            .withValue(AozoraDatabase.File.LAST_UPDATE, htmlLastUpdate)
+            .withValue(AozoraDatabase.File.CHARSET, htmlCharset)
+            .build());
   }
 }

@@ -1,7 +1,8 @@
 package com.teratail.q_lm3admtis2c6ua;
 
 import android.annotation.SuppressLint;
-import android.os.Bundle;
+import android.database.*;
+import android.os.*;
 import android.view.*;
 import android.widget.*;
 
@@ -11,9 +12,8 @@ import androidx.lifecycle.*;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.work.WorkInfo;
 
-import java.util.*;
-
 public class CardSummaryListFragment extends Fragment {
+  @SuppressWarnings("unused")
   private static final String LOG_TAG = CardSummaryListFragment.class.getSimpleName();
 
   public CardSummaryListFragment() {
@@ -36,34 +36,31 @@ public class CardSummaryListFragment extends Fragment {
       if(button.getTag() == aiueo) return;
       button.setTag(aiueo);
       button.setText(aiueo == null ? "(未選択)" : "" + aiueo);
-      viewModel.requestCardListWithAiueo(aiueo);
+      viewModel.requestCardSummaryCursor(aiueo);
     });
 
     RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
     CardSummaryAdapter adapter = new CardSummaryAdapter(viewModel::setSelectedCardSummary);
     recyclerView.setAdapter(adapter);
 
-    viewModel.getCardListWithAiueo().observe(getViewLifecycleOwner(), cardListWithAiueo -> {
-      if(cardListWithAiueo == null) return;
-      if(cardListWithAiueo.aiueo == button.getTag()){
-        adapter.setList(cardListWithAiueo.list);
-        countText.setText("" + cardListWithAiueo.list.size());
-      }
+    viewModel.getCardSummaryCursor().observe(getViewLifecycleOwner(), cursor -> {
+      adapter.swapCursor(cursor);
+      countText.setText("" + (cursor == null ? 0 : cursor.getCount()));
     });
 
-    viewModel.getDownload().observe(getViewLifecycleOwner(), workInfoList -> {
+    viewModel.getDownloadWorkInfo().observe(getViewLifecycleOwner(), workInfoList -> {
+      if(workInfoList == null || workInfoList.size() == 0) return;
       Aiueo aiueo = (Aiueo)button.getTag();
       if(aiueo == null) return;
-      if(workInfoList == null || workInfoList.size() == 0) return;
       WorkInfo workInfo = workInfoList.get(0);
-      if(workInfo.getState().isFinished()) viewModel.requestCardListWithAiueo(aiueo);
+      if(workInfo.getState().isFinished()) viewModel.requestCardSummaryCursor(aiueo);
     });
   }
 
   private static class CardSummaryAdapter extends RecyclerView.Adapter<CardSummaryAdapter.ViewHolder> {
     @FunctionalInterface
     interface RowClickListener {
-      void onClick(CardSummary cardSummary);
+      void onClick(String cardUrl);
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
@@ -75,21 +72,30 @@ public class CardSummaryListFragment extends Fragment {
         title = itemView.findViewById(R.id.title);
         subtitle = itemView.findViewById(R.id.subtitle);
         author = itemView.findViewById(R.id.author);
-        if(rowClickListener != null) itemView.setOnClickListener(v -> rowClickListener.onClick((CardSummary)itemView.getTag()));
+        if(rowClickListener != null) itemView.setOnClickListener(v -> rowClickListener.onClick((String)itemView.getTag()));
       }
     }
 
     private final RowClickListener rowClickListener;
-    private List<CardSummary> list = Collections.emptyList();
+    private Cursor cursor;
+    int titleIndex, subtitleIndex, urlIndex, authorIndex;
 
     public CardSummaryAdapter(RowClickListener rowClickListener) {
       this.rowClickListener = rowClickListener;
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    public void setList(List<CardSummary> list) {
-      this.list = new ArrayList<>(list); //防御コピー
+    public Cursor swapCursor(Cursor cursor) {
+      Cursor old = this.cursor;
+      this.cursor = cursor;
+      if(this.cursor != null) {
+        titleIndex = this.cursor.getColumnIndex("title");
+        subtitleIndex = this.cursor.getColumnIndex("subtitle");
+        urlIndex = this.cursor.getColumnIndex("card_url");
+        authorIndex = this.cursor.getColumnIndex("author");
+      }
       notifyDataSetChanged();
+      return old;
     }
 
     @NonNull
@@ -99,21 +105,28 @@ public class CardSummaryListFragment extends Fragment {
       return new ViewHolder(inflate);
     }
 
+
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-      CardSummary cardSummary = list.get(position);
-      holder.itemView.setTag(cardSummary);
-      holder.num.setText((position+1) + ".");
-      holder.title.setText(cardSummary.title);
-      holder.subtitle.setText(cardSummary.subtitle);
-      holder.author.setText(cardSummary.author);
+      cursor.moveToPosition(position);
+      String title = cursor.getString(titleIndex);
+      String subtitle = cursor.getString(subtitleIndex);
+      String url = cursor.getString(urlIndex);
+      String author = cursor.getString(authorIndex);
 
-      holder.subtitle.setVisibility(cardSummary.subtitle.isEmpty() ? View.GONE : View.VISIBLE);
+      holder.itemView.setTag(url);
+
+      holder.num.setText(String.format("%d.", position+1));
+      holder.title.setText(title);
+      holder.subtitle.setText(subtitle);
+      holder.author.setText(author);
+
+      holder.subtitle.setVisibility(subtitle.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     @Override
     public int getItemCount() {
-      return list.size();
+      return cursor == null ? 0 : cursor.getCount();
     }
   }
 }

@@ -1,14 +1,12 @@
 package com.teratail.q_lm3admtis2c6ua;
 
-import android.util.Log;
-
 import androidx.annotation.NonNull;
 
 import java.io.*;
 import java.util.function.Consumer;
 
 class CsvParser {
-  private static class TokenBuilfer {
+  private static class TokenBuilder {
     private StringBuilder sb = new StringBuilder();
     private int countSpace = 0;
 
@@ -34,12 +32,12 @@ class CsvParser {
   private boolean isTokenEnd(int c) { return c < 0 || c == ',' || isCRLF(c); }
   private static boolean isCRLF(int c) { return c == '\r' || c == '\n'; }
 
-  private TokenBuilfer tb = new TokenBuilfer();
+  private TokenBuilder tb = new TokenBuilder();
   private boolean useQuot = false;
   private int countQuot = 0;
   private State state = State.CAPTURE;
 
-  void parse(String line, @NonNull Consumer<String> consumer) {
+  void parse(@NonNull String line, @NonNull Consumer<String> consumer) {
     try {
       parse(new StringReader(line), consumer);
     } catch(IOException ignore) {
@@ -47,7 +45,7 @@ class CsvParser {
   }
 
   //サロゲート対応が必要かどうか…
-  void parse(Reader reader, @NonNull Consumer<String> consumer) throws IOException {
+  void parse(@NonNull Reader reader, @NonNull Consumer<String> consumer) throws IOException {
     for(int c=0; c >= 0; ) {
       c = reader.read();
       put(c, consumer);

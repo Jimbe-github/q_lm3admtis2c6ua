@@ -16,6 +16,7 @@ import java.util.*;
 
 //普通にフラグメントとしての使用の他、ダイアログとしても使用可能(その場合は newInstance(Mode.DIALOG) を使用すること)
 public class AiueoSelectFragment extends DialogFragment {
+  @SuppressWarnings("unused")
   private static final String LOG_TAG = AiueoSelectFragment.class.getSimpleName();
 
   enum Mode {

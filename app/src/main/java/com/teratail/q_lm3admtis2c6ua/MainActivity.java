@@ -10,6 +10,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
 public class MainActivity extends AppCompatActivity {
+  @SuppressWarnings("unused")
   private static final String LOG_TAG = MainActivity.class.getSimpleName();
 
   MainModel mainModel;
@@ -29,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
     ViewPager2 viewPager = findViewById(R.id.viewPager);
     viewPager.setAdapter(new ViewPagerAdapter(this));
 
-    viewModel.getSelectedCardSummary().observe(this, cardSummary -> {
+    viewModel.getSelectedCardUrl().observe(this, cardSummary -> {
       viewPager.setCurrentItem(1);
     });
   }
