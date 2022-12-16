@@ -12,6 +12,8 @@ import androidx.lifecycle.*;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.work.WorkInfo;
 
+import com.google.android.material.progressindicator.CircularProgressIndicator;
+
 public class CardSummaryListFragment extends Fragment {
   @SuppressWarnings("unused")
   private static final String LOG_TAG = CardSummaryListFragment.class.getSimpleName();
@@ -32,28 +34,25 @@ public class CardSummaryListFragment extends Fragment {
               AiueoSelectFragment.newInstance(AiueoSelectFragment.Mode.DIALOG).show(getChildFragmentManager(), null));
     }
 
+    ProgressBar circlerProgess = view.findViewById(R.id.circularProgress);
+    RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
+    CardSummaryAdapter adapter = new CardSummaryAdapter(viewModel::setSelectedCardSummary);
+    recyclerView.setAdapter(adapter);
+
     viewModel.getSelectedAiueo().observe(getViewLifecycleOwner(), aiueo -> {
       if(button.getTag() == aiueo) return;
       button.setTag(aiueo);
       button.setText(aiueo == null ? "(未選択)" : "" + aiueo);
       viewModel.requestCardSummaryCursor(aiueo);
+      circlerProgess.setVisibility(View.VISIBLE);
+      recyclerView.setVisibility(View.INVISIBLE);
     });
-
-    RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
-    CardSummaryAdapter adapter = new CardSummaryAdapter(viewModel::setSelectedCardSummary);
-    recyclerView.setAdapter(adapter);
 
     viewModel.getCardSummaryCursor().observe(getViewLifecycleOwner(), cursor -> {
       adapter.swapCursor(cursor);
       countText.setText("" + (cursor == null ? 0 : cursor.getCount()));
-    });
-
-    viewModel.getDownloadWorkInfo().observe(getViewLifecycleOwner(), workInfoList -> {
-      if(workInfoList == null || workInfoList.size() == 0) return;
-      Aiueo aiueo = (Aiueo)button.getTag();
-      if(aiueo == null) return;
-      WorkInfo workInfo = workInfoList.get(0);
-      if(workInfo.getState().isFinished()) viewModel.requestCardSummaryCursor(aiueo);
+      circlerProgess.setVisibility(View.INVISIBLE);
+      recyclerView.setVisibility(View.VISIBLE);
     });
   }
 

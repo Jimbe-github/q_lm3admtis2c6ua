@@ -35,18 +35,19 @@ public class MainModel {
   }
 
   void requestCardSummaryCursor(@NonNull Aiueo aiueo, @NonNull Consumer<Cursor> callback) {
-    String[] projection = new String[]{CardSummary.TITLE, CardSummary.SUBTITLE, CardSummary.CARD_URL, CardSummary.AUTHOR};
-
-    String selection;
-    String[] selectionArgs;
-    if(aiueo == Aiueo.他) {
-      selection = CardSummary.SORT_TITLE+"=? or INSTR(?,SUBSTR("+CardSummary.SORT_TITLE+",1,1))=0";
-      selectionArgs = new String[]{"", Aiueo.VALID_STRING};
-    } else {
-      selection = "SUBSTR("+CardSummary.SORT_TITLE+",1,1)=?";
-      selectionArgs = new String[]{"" + aiueo};
-    }
-    Cursor cursor = resolver.query(CardSummary.CONTENT_URI, projection, selection, selectionArgs, CardSummary.SORT_TITLE);
-    callback.accept(cursor);
+    new Thread(() -> {
+      String[] projection = new String[]{CardSummary.TITLE, CardSummary.SUBTITLE, CardSummary.CARD_URL, CardSummary.AUTHOR};
+      String selection;
+      String[] selectionArgs;
+      if(aiueo == Aiueo.他) {
+        selection = CardSummary.SORT_TITLE + "=? or INSTR(?,SUBSTR(" + CardSummary.SORT_TITLE + ",1,1))=0";
+        selectionArgs = new String[]{"", Aiueo.VALID_STRING};
+      } else {
+        selection = "SUBSTR(" + CardSummary.SORT_TITLE + ",1,1)=?";
+        selectionArgs = new String[]{"" + aiueo};
+      }
+      Cursor cursor = resolver.query(CardSummary.CONTENT_URI, projection, selection, selectionArgs, CardSummary.SORT_TITLE);
+      callback.accept(cursor);
+    }).start();
   }
 }

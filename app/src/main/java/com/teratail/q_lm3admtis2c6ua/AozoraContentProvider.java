@@ -12,17 +12,23 @@ import java.util.ArrayList;
 public class AozoraContentProvider extends ContentProvider {
   public static final String AUTHORITY = AozoraContentProvider.class.getPackage().getName() + ".provider";
 
+  static final String SUFFIX_NOOP = "_noop";
+
   private enum Subtype {
     DIR, ITEM
   }
   private enum UriPattern {
-    DOWNLOAD(   Download.TABLE, Subtype.DIR, Download.CONTENT_TYPE, false, true, false), //query,update のみ
-    CARD(       Card.TABLE,      Subtype.DIR,  Card.CONTENT_TYPE),
-    CARD_ITEM(  Card.TABLE+"/#", Subtype.ITEM, Card.CONTENT_ITEM_TYPE),
+    DOWNLOAD(     Download.TABLE,             Subtype.DIR, Download.CONTENT_TYPE, false, true, false), //query,update のみ
+    DOWNLOAD_NOOP(Download.TABLE+SUFFIX_NOOP, Subtype.DIR, Download.CONTENT_TYPE),
+    CARD(     Card.TABLE,      Subtype.DIR,  Card.CONTENT_TYPE),
+    CARD_ITEM(Card.TABLE+"/#", Subtype.ITEM, Card.CONTENT_ITEM_TYPE),
+    CARD_NOOP(Card.TABLE+SUFFIX_NOOP, Subtype.DIR,  Card.CONTENT_TYPE),
     AUTHOR(     Author.TABLE,      Subtype.DIR,  Author.CONTENT_TYPE),
     AUTHOR_ITEM(Author.TABLE+"/#", Subtype.ITEM, Author.CONTENT_ITEM_TYPE),
-    FILE(       File.TABLE,      Subtype.DIR,  File.CONTENT_TYPE),
-    FILE_ITEM(  File.TABLE+"/#", Subtype.ITEM, File.CONTENT_ITEM_TYPE),
+    AUTHOR_NOOP(Author.TABLE+SUFFIX_NOOP, Subtype.DIR,  Author.CONTENT_TYPE),
+    FILE(     File.TABLE,      Subtype.DIR,  File.CONTENT_TYPE),
+    FILE_ITEM(File.TABLE+"/#", Subtype.ITEM, File.CONTENT_ITEM_TYPE),
+    FILE_NOOP(File.TABLE+SUFFIX_NOOP, Subtype.DIR,  File.CONTENT_TYPE),
 
     CARDSUMMARY(CardSummary.TABLE,
             "(SELECT c."+Card.TITLE+" as "+CardSummary.TITLE+","+
@@ -103,10 +109,15 @@ public class AozoraContentProvider extends ContentProvider {
     UriPattern p = UriPattern.get(code);
     if(!p.canInsert || p.subtype == Subtype.ITEM) throw new IllegalArgumentException("This table cannot be inserted。uri=" + uri);
 
-    SQLiteDatabase db = helper.getWritableDatabase();
-    long id = db.replace(p.table, null, values);
-    if(id <= 0) throw new IllegalArgumentException("uri = " + uri);
-
+    long id = 0;
+    String path = uri.getPath();
+    if(path.endsWith(SUFFIX_NOOP)) {
+      uri = uri.buildUpon().path(path.substring(0, path.length() - SUFFIX_NOOP.length())).build(); //NOOP を外す
+    } else {
+      SQLiteDatabase db = helper.getWritableDatabase();
+      id = db.replace(p.table, null, values);
+      if(id <= 0) throw new IllegalArgumentException("uri = " + uri);
+    }
     uri = ContentUris.withAppendedId(uri, id);
     getContext().getContentResolver().notifyChange(uri, null);
     return uri;

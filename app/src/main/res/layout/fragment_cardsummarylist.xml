@@ -44,4 +44,14 @@
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toBottomOf="@id/button" />
 
+  <ProgressBar
+      android:id="@+id/circularProgress"
+      android:layout_width="100dp"
+      android:layout_height="100dp"
+      android:indeterminateTint="#88ff88"
+      android:visibility="invisible"
+      app:layout_constraintBottom_toBottomOf="parent"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@id/button" />
 </androidx.constraintlayout.widget.ConstraintLayout>
