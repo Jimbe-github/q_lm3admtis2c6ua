@@ -1,18 +1,18 @@
 package com.teratail.q_lm3admtis2c6ua;
 
+import static com.teratail.q_lm3admtis2c6ua.AozoraDatabase.CardSummary;
+
 import android.annotation.SuppressLint;
-import android.database.*;
-import android.os.*;
+import android.database.Cursor;
+import android.os.Bundle;
 import android.view.*;
 import android.widget.*;
 
 import androidx.annotation.*;
-import androidx.fragment.app.*;
-import androidx.lifecycle.*;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.work.WorkInfo;
-
-import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 public class CardSummaryListFragment extends Fragment {
   @SuppressWarnings("unused")
@@ -28,15 +28,19 @@ public class CardSummaryListFragment extends Fragment {
 
     TextView countText = view.findViewById(R.id.countText);
     Button button = view.findViewById(R.id.button);
-    //xml 上に ( 直接 AiueoSelectFragment を指定してある FragmentContainerView の )ID があるなら, ダイアログは必要無い = null
+    //xml 上に ( 直接 AiueoSelectFragment を指定してある FragmentContainerView の )ID があるなら, ダイアログは必要無い
     if(view.findViewById(R.id.aiueo_select) == null) {
-      button.setOnClickListener(v ->
-              AiueoSelectFragment.newInstance(AiueoSelectFragment.Mode.DIALOG).show(getChildFragmentManager(), null));
+      button.setOnClickListener(v -> {
+        NavHostFragment.findNavController(CardSummaryListFragment.this).navigate(R.id.nav_aiueo_select_dialog);
+      });
     }
 
     ProgressBar circlerProgess = view.findViewById(R.id.circularProgress);
     RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
-    CardSummaryAdapter adapter = new CardSummaryAdapter(viewModel::setSelectedCardSummary);
+    CardSummaryAdapter adapter = new CardSummaryAdapter(url -> {
+      viewModel.setSelectedCardUrl(url);
+      NavHostFragment.findNavController(this).navigate(R.id.action_selected_url);
+    });
     recyclerView.setAdapter(adapter);
 
     viewModel.getSelectedAiueo().observe(getViewLifecycleOwner(), aiueo -> {
@@ -88,10 +92,10 @@ public class CardSummaryListFragment extends Fragment {
       Cursor old = this.cursor;
       this.cursor = cursor;
       if(this.cursor != null) {
-        titleIndex = this.cursor.getColumnIndex("title");
-        subtitleIndex = this.cursor.getColumnIndex("subtitle");
-        urlIndex = this.cursor.getColumnIndex("card_url");
-        authorIndex = this.cursor.getColumnIndex("author");
+        titleIndex = this.cursor.getColumnIndex(CardSummary.TITLE);
+        subtitleIndex = this.cursor.getColumnIndex(CardSummary.SUBTITLE);
+        urlIndex = this.cursor.getColumnIndex(CardSummary.CARD_URL);
+        authorIndex = this.cursor.getColumnIndex(CardSummary.AUTHOR);
       }
       notifyDataSetChanged();
       return old;
@@ -103,7 +107,6 @@ public class CardSummaryListFragment extends Fragment {
       View inflate = LayoutInflater.from(parent.getContext()).inflate(R.layout.recycler_item, parent, false);
       return new ViewHolder(inflate);
     }
-
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {

@@ -2,6 +2,7 @@ package com.teratail.q_lm3admtis2c6ua;
 
 import android.content.*;
 import android.database.*;
+import android.os.Handler;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
@@ -16,8 +17,8 @@ public class MainModel {
   @SuppressWarnings("unused")
   private static final String LOG_TAG = MainModel.class.getSimpleName();
 
-  private WorkManager workManager;
-  private ContentResolver resolver;
+  private final WorkManager workManager;
+  private final ContentResolver resolver;
 
   MainModel(Context context) {
     context = context.getApplicationContext();
@@ -34,7 +35,7 @@ public class MainModel {
     return workManager.getWorkInfosByTagLiveData("downloadWork");
   }
 
-  void requestCardSummaryCursor(@NonNull Aiueo aiueo, @NonNull Consumer<Cursor> callback) {
+  void requestCardSummaryCursor(@NonNull Aiueo aiueo, @NonNull Handler handler, @NonNull Consumer<Cursor> callback) {
     new Thread(() -> {
       String[] projection = new String[]{CardSummary.TITLE, CardSummary.SUBTITLE, CardSummary.CARD_URL, CardSummary.AUTHOR};
       String selection;
@@ -47,7 +48,7 @@ public class MainModel {
         selectionArgs = new String[]{"" + aiueo};
       }
       Cursor cursor = resolver.query(CardSummary.CONTENT_URI, projection, selection, selectionArgs, CardSummary.SORT_TITLE);
-      callback.accept(cursor);
+      handler.post(() -> callback.accept(cursor));
     }).start();
   }
 }

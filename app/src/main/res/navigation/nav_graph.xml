@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/nav_card_summary_list_fragment" >
+
+  <fragment
+      android:id="@+id/nav_card_summary_list_fragment"
+      android:name="com.teratail.q_lm3admtis2c6ua.CardSummaryListFragment"
+      android:label="作品一覧"
+      tools:layout="@layout/fragment_cardsummarylist">
+    <action
+        android:id="@+id/action_request_aiueo_selector"
+        app:destination="@id/nav_aiueo_select_dialog" />
+    <action
+        android:id="@+id/action_selected_url"
+        app:destination="@id/nav_web_view_fragment" />
+  </fragment>
+
+  <dialog
+      android:id="@+id/nav_aiueo_select_dialog"
+      android:name="com.teratail.q_lm3admtis2c6ua.AiueoSelectFragment">
+  </dialog>
+
+  <fragment
+      android:id="@+id/nav_web_view_fragment"
+      android:name="com.teratail.q_lm3admtis2c6ua.WebViewFragment"
+      android:label="青空カード"
+      tools:layout="@layout/fragment_webview">
+  </fragment>
+</navigation>

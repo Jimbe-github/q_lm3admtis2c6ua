@@ -1,9 +1,10 @@
 package com.teratail.q_lm3admtis2c6ua;
 
-import android.content.*;
+import android.app.Dialog;
+import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.*;
+import android.util.TypedValue;
 import android.view.*;
 import android.widget.*;
 
@@ -12,32 +13,14 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import java.util.*;
+import java.util.EnumMap;
 
-//普通にフラグメントとしての使用の他、ダイアログとしても使用可能(その場合は newInstance(Mode.DIALOG) を使用すること)
+//普通にフラグメントとしての使用の他、ダイアログとしても使用可能
 public class AiueoSelectFragment extends DialogFragment {
   @SuppressWarnings("unused")
   private static final String LOG_TAG = AiueoSelectFragment.class.getSimpleName();
 
-  enum Mode {
-    NORMAL(),
-    DIALOG() {
-      @Override
-      void dismiss(DialogFragment f) { f.dismiss(); }
-    };
-
-    void dismiss(DialogFragment f) { /*default: nothing*/ }
-  }
-
-  static AiueoSelectFragment newInstance(@NonNull Mode mode) {
-    AiueoSelectFragment fragment = new AiueoSelectFragment();
-    Bundle args = new Bundle();
-    args.putSerializable("mode", mode);
-    fragment.setArguments(args);
-    return fragment;
-  }
-
-  private Mode mode = Mode.NORMAL;
+  private Dialog dialog;
   private Button latestSelect;
   private int defaultColor = Color.BLACK;
 
@@ -50,16 +33,14 @@ public class AiueoSelectFragment extends DialogFragment {
 
     MainViewModel viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
 
-    if(getArguments() != null) {
-      mode = (Mode)getArguments().getSerializable("mode");
-    }
-    Log.d(LOG_TAG, "mode=" + mode);
-
     View.OnClickListener clickListener = v -> {
       Button button = (Button)v;
       changeSelected(button);
       viewModel.setSelectedAiueo((Aiueo)button.getTag());
-      mode.dismiss(this);
+      if(dialog != null) {
+        dialog.dismiss();
+        dialog = null; //念の為
+      }
     };
 
     EnumMap<Aiueo,Button> bMap = new EnumMap<>(Aiueo.class);
@@ -111,5 +92,12 @@ public class AiueoSelectFragment extends DialogFragment {
         latestSelect.setTextColor(Color.RED);
       }
     }
+  }
+
+  @NonNull
+  @Override
+  public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+    dialog = super.onCreateDialog(savedInstanceState);
+    return dialog;
   }
 }

@@ -1,22 +1,35 @@
 package com.teratail.q_lm3admtis2c6ua;
 
+import android.app.Application;
 import android.database.*;
+import android.os.*;
+import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.lifecycle.*;
 import androidx.work.WorkInfo;
 
 import java.util.List;
 
-public class MainViewModel extends ViewModel {
+public class MainViewModel extends AndroidViewModel {
   @SuppressWarnings("unused")
   private static final String LOG_TAG = MainViewModel.class.getSimpleName();
 
   private MainModel mainModel;
-  void setModel(MainModel mainModel) {
-    this.mainModel = mainModel;
-  }
+  private Handler handler;
 
   private LiveData<List<WorkInfo>> downloadLiveData;
+
+  public MainViewModel(@NonNull Application application) {
+    super(application);
+    mainModel = new MainModel(application);
+    handler = new Handler(Looper.getMainLooper());
+  }
+
+  void requestDownload() {
+    setDownloadLiveData(mainModel.requestDownloadWork());
+  }
+
   void setDownloadLiveData(LiveData<List<WorkInfo>> workInfoListLiveData) { downloadLiveData = workInfoListLiveData; }
   LiveData<List<WorkInfo>> getDownloadWorkInfo() { return downloadLiveData; }
 
@@ -38,7 +51,7 @@ public class MainViewModel extends ViewModel {
   private final MutableLiveData<Cursor> cardSummaryCursorLiveData = new MutableLiveData<>(null);
   LiveData<Cursor> getCardSummaryCursor() { return cardSummaryCursorLiveData; }
   void requestCardSummaryCursor(Aiueo aiueo) {
-    mainModel.requestCardSummaryCursor(aiueo, cursor -> {
+    mainModel.requestCardSummaryCursor(aiueo, handler, cursor -> {
       Cursor old = cardSummaryCursorLiveData.getValue();
       if(old == cursor) return;
       if(old != null) {
@@ -49,7 +62,7 @@ public class MainViewModel extends ViewModel {
         cursorContentObserver = new CursorContentObserver(aiueo);
         cursor.registerContentObserver(cursorContentObserver);
       }
-      cardSummaryCursorLiveData.postValue(cursor);
+      cardSummaryCursorLiveData.setValue(cursor);
     });
   }
 
@@ -65,12 +78,13 @@ public class MainViewModel extends ViewModel {
   LiveData<String> getSelectedCardUrl() {
     return selectedCardUrlLiveData;
   }
-  void setSelectedCardSummary(String url) {
+  void setSelectedCardUrl(String url) {
     selectedCardUrlLiveData.setValue(url);
   }
 
   @Override
   protected void onCleared() {
+    Log.d(LOG_TAG, "onCleared");
     super.onCleared();
     Cursor cursor = cardSummaryCursorLiveData.getValue();
     if(cursor != null) {
