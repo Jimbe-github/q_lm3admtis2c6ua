@@ -24,12 +24,15 @@ public class AiueoSelectFragment extends DialogFragment {
   private Button latestSelect;
   private int defaultColor = Color.BLACK;
 
+  public AiueoSelectFragment() {
+    super(R.layout.fragment_aiueoselect);
+  }
+
   // xml で 50 個ボタン定義を並べるのは流石に面倒なのでプログラムで生成
   @Nullable
   @Override
   public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-    Context context = container == null ? getContext() : container.getContext();
-    assert context != null;
+    View view = super.onCreateView(inflater, container, savedInstanceState);
 
     MainViewModel viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
 
@@ -45,8 +48,7 @@ public class AiueoSelectFragment extends DialogFragment {
 
     EnumMap<Aiueo,Button> bMap = new EnumMap<>(Aiueo.class);
 
-    GridLayout grid = new GridLayout(context);
-    grid.setColumnCount(5);
+    GridLayout grid = view.findViewById(R.id.grid_layout);
     for(int i=0, j=0; i<Aiueo.values().length; i++, j++) {
       Aiueo aiueo = Aiueo.values()[i];
       if(aiueo == Aiueo.ゆ || aiueo == Aiueo.よ || aiueo == Aiueo.他) j++; //ボタンの隙間を空ける(enum の並び順依存)
@@ -60,10 +62,6 @@ public class AiueoSelectFragment extends DialogFragment {
 
     viewModel.getSelectedAiueo().observe(getViewLifecycleOwner(), aiueo -> changeSelected(bMap.get(aiueo)));
 
-    HorizontalScrollView hscroll = new HorizontalScrollView(context);
-    hscroll.addView(grid);
-    ScrollView view = new ScrollView(context);
-    view.addView(hscroll);
     return view;
   }
 

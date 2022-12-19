@@ -3,19 +3,19 @@
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/nav_card_summary_list_fragment" >
+    app:startDestination="@id/nav_main_fragment" >
 
   <fragment
-      android:id="@+id/nav_card_summary_list_fragment"
-      android:name="com.teratail.q_lm3admtis2c6ua.CardSummaryListFragment"
+      android:id="@+id/nav_main_fragment"
+      android:name="com.teratail.q_lm3admtis2c6ua.MainFragment"
       android:label="作品一覧"
-      tools:layout="@layout/fragment_cardsummarylist">
-    <action
-        android:id="@+id/action_request_aiueo_selector"
-        app:destination="@id/nav_aiueo_select_dialog" />
+      tools:layout="@layout/fragment_main">
     <action
         android:id="@+id/action_selected_url"
         app:destination="@id/nav_web_view_fragment" />
+    <action
+        android:id="@+id/action_request_aiueo_selector"
+        app:destination="@id/nav_aiueo_select_dialog" />
   </fragment>
 
   <dialog

@@ -5,18 +5,21 @@ import static com.teratail.q_lm3admtis2c6ua.AozoraDatabase.CardSummary;
 import android.annotation.SuppressLint;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.*;
 import android.widget.*;
 
 import androidx.annotation.*;
-import androidx.fragment.app.Fragment;
+import androidx.fragment.app.*;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class CardSummaryListFragment extends Fragment {
   @SuppressWarnings("unused")
   private static final String LOG_TAG = CardSummaryListFragment.class.getSimpleName();
+
+  static final String REQUESTKEY_SELECT_URL = CardSummaryListFragment.class.getSimpleName()+".selectUrl";
+  static final String REQUESTKEY_SELECT_AIUEO = CardSummaryListFragment.class.getSimpleName()+".selectAiueo";
 
   public CardSummaryListFragment() {
     super(R.layout.fragment_cardsummarylist);
@@ -25,21 +28,19 @@ public class CardSummaryListFragment extends Fragment {
   @Override
   public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
     MainViewModel viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+    FragmentManager pfm = getParentFragmentManager();
 
     TextView countText = view.findViewById(R.id.countText);
     Button button = view.findViewById(R.id.button);
-    //xml 上に ( 直接 AiueoSelectFragment を指定してある FragmentContainerView の )ID があるなら, ダイアログは必要無い
-    if(view.findViewById(R.id.aiueo_select) == null) {
-      button.setOnClickListener(v -> {
-        NavHostFragment.findNavController(CardSummaryListFragment.this).navigate(R.id.nav_aiueo_select_dialog);
-      });
-    }
+    button.setOnClickListener(v -> {
+      pfm.setFragmentResult(REQUESTKEY_SELECT_AIUEO, new Bundle());
+    });
 
     ProgressBar circlerProgess = view.findViewById(R.id.circularProgress);
     RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
     CardSummaryAdapter adapter = new CardSummaryAdapter(url -> {
       viewModel.setSelectedCardUrl(url);
-      NavHostFragment.findNavController(this).navigate(R.id.action_selected_url);
+      pfm.setFragmentResult(REQUESTKEY_SELECT_URL, new Bundle());
     });
     recyclerView.setAdapter(adapter);
 
@@ -54,7 +55,7 @@ public class CardSummaryListFragment extends Fragment {
 
     viewModel.getCardSummaryCursor().observe(getViewLifecycleOwner(), cursor -> {
       adapter.swapCursor(cursor);
-      countText.setText("" + (cursor == null ? 0 : cursor.getCount()));
+      countText.setText(String.valueOf(cursor == null ? 0 : cursor.getCount()));
       circlerProgess.setVisibility(View.INVISIBLE);
       recyclerView.setVisibility(View.VISIBLE);
     });

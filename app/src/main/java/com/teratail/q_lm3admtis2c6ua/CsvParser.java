@@ -29,7 +29,7 @@ class CsvParser {
   }
 
   private enum State { CAPTURE, END; } //'"' で囲まれたトークンで、終わりの '"' から区切り文字 (',' 等 ) までの間を飛ばす判定の為
-  private boolean isTokenEnd(int c) { return c < 0 || c == ',' || isCRLF(c); }
+  private static boolean isTokenEnd(int c) { return c < 0 || c == ',' || isCRLF(c); }
   private static boolean isCRLF(int c) { return c == '\r' || c == '\n'; }
 
   private TokenBuilder tb = new TokenBuilder();
@@ -68,14 +68,14 @@ class CsvParser {
     if(c == '"') {
       if(useQuot) { //'"' で囲まれたトークン内
         if(++countQuot == 2) { //エスケープの 2 文字目なら
-          tb.append((char)c);
           countQuot = 0;
+          tb.append((char)c);
         }
         return;
       }
       if(tb.allSpace()) { //( スペース後の )トークンの始まりの '"'
-        useQuot = true;
         tb.clear();
+        useQuot = true;
         countQuot = 0;
         return;
       }

@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity {
     setContentView(R.layout.activity_main);
 
     Toolbar toolbar = findViewById(R.id.toolbar);
-    setSupportActionBar(toolbar);
+    //setSupportActionBar(toolbar); //Navi によるタイトルの表示に支障が出る
 
     NavHostFragment navHostFragment = (NavHostFragment)getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
     NavController navController = navHostFragment.getNavController();
