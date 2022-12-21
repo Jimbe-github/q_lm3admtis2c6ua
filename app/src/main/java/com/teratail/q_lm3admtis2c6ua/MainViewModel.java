@@ -16,8 +16,8 @@ public class MainViewModel extends AndroidViewModel {
   @SuppressWarnings("unused")
   private static final String LOG_TAG = MainViewModel.class.getSimpleName();
 
-  private MainModel mainModel;
-  private Handler handler;
+  private final MainModel mainModel;
+  private final Handler handler;
 
   private LiveData<List<WorkInfo>> downloadLiveData;
 
@@ -32,6 +32,7 @@ public class MainViewModel extends AndroidViewModel {
   }
 
   void setDownloadLiveData(LiveData<List<WorkInfo>> workInfoListLiveData) { downloadLiveData = workInfoListLiveData; }
+  @SuppressWarnings("unused")
   LiveData<List<WorkInfo>> getDownloadWorkInfo() { return downloadLiveData; }
 
   private class RequestCardSummaryCursorCallback extends ContentObserver implements BiConsumer<Aiueo,Cursor> {
@@ -50,6 +51,7 @@ public class MainViewModel extends AndroidViewModel {
       this.aiueo = aiueo;
       if(cursor != null) cursor.registerContentObserver(this);
       cardSummaryCursorLiveData.setValue(cursor);
+      setTitle(aiueo, cursor == null ? 0 : cursor.getCount());
     }
     //accept で受けたカーソルの利用中にその元テーブルが修正された場合に呼ばれる.
     @Override
@@ -62,6 +64,7 @@ public class MainViewModel extends AndroidViewModel {
 
   private final MutableLiveData<Cursor> cardSummaryCursorLiveData = new MutableLiveData<>(null);
   LiveData<Cursor> getCardSummaryCursor() { return cardSummaryCursorLiveData; }
+
   void requestCardSummaryCursor(Aiueo aiueo) {
     mainModel.requestCardSummaryCursor(aiueo, handler, requestCardSummaryCursorCallback);
   }
@@ -72,6 +75,18 @@ public class MainViewModel extends AndroidViewModel {
   }
   void setSelectedAiueo(Aiueo aiueo) {
     selectedAiueoLiveData.setValue(aiueo);
+  }
+
+  private final MutableLiveData<String> titleLiveData = new MutableLiveData<>("作品一覧");
+  LiveData<String> getTitle() {
+    return titleLiveData;
+  }
+  private void setTitle(Aiueo aiueo, int count) {
+    StringBuilder sb = new StringBuilder("作品一覧");
+    if(aiueo != null) {
+      sb.append("(").append(aiueo).append(":").append(count).append("件)");
+    }
+    titleLiveData.setValue(sb.toString());
   }
 
   private final MutableLiveData<String> selectedCardUrlLiveData = new MutableLiveData<>();
@@ -98,4 +113,3 @@ public class MainViewModel extends AndroidViewModel {
     }
   }
 }
-

@@ -8,7 +8,6 @@
   <fragment
       android:id="@+id/nav_main_fragment"
       android:name="com.teratail.q_lm3admtis2c6ua.MainFragment"
-      android:label="作品一覧"
       tools:layout="@layout/fragment_main">
     <action
         android:id="@+id/action_selected_url"
@@ -26,7 +25,7 @@
   <fragment
       android:id="@+id/nav_web_view_fragment"
       android:name="com.teratail.q_lm3admtis2c6ua.WebViewFragment"
-      android:label="青空カード"
+      android:label="図書カード"
       tools:layout="@layout/fragment_webview">
   </fragment>
 </navigation>

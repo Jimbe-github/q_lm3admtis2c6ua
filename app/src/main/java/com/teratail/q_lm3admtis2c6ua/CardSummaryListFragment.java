@@ -10,8 +10,10 @@ import android.view.*;
 import android.widget.*;
 
 import androidx.annotation.*;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.*;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.*;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class CardSummaryListFragment extends Fragment {
@@ -21,6 +23,8 @@ public class CardSummaryListFragment extends Fragment {
   static final String REQUESTKEY_SELECT_URL = CardSummaryListFragment.class.getSimpleName()+".selectUrl";
   static final String REQUESTKEY_SELECT_AIUEO = CardSummaryListFragment.class.getSimpleName()+".selectAiueo";
 
+  private Aiueo aiueo;
+
   public CardSummaryListFragment() {
     super(R.layout.fragment_cardsummarylist);
   }
@@ -29,12 +33,7 @@ public class CardSummaryListFragment extends Fragment {
   public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
     MainViewModel viewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
     FragmentManager pfm = getParentFragmentManager();
-
-    TextView countText = view.findViewById(R.id.countText);
-    Button button = view.findViewById(R.id.button);
-    button.setOnClickListener(v -> {
-      pfm.setFragmentResult(REQUESTKEY_SELECT_AIUEO, new Bundle());
-    });
+    NavController navController = Navigation.findNavController(view);
 
     ProgressBar circlerProgess = view.findViewById(R.id.circularProgress);
     RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
@@ -45,17 +44,20 @@ public class CardSummaryListFragment extends Fragment {
     recyclerView.setAdapter(adapter);
 
     viewModel.getSelectedAiueo().observe(getViewLifecycleOwner(), aiueo -> {
-      if(button.getTag() == aiueo) return;
-      button.setTag(aiueo);
-      button.setText(aiueo == null ? "(未選択)" : "" + aiueo);
+      if(this.aiueo == aiueo) return;
+      this.aiueo = aiueo;
       viewModel.requestCardSummaryCursor(aiueo);
       circlerProgess.setVisibility(View.VISIBLE);
       recyclerView.setVisibility(View.INVISIBLE);
     });
 
+    viewModel.getTitle().observe(getViewLifecycleOwner(), title -> {
+      Log.d(LOG_TAG, "title=" + title);
+      ((AppCompatActivity)requireActivity()).getSupportActionBar().setTitle(title);
+    });
+
     viewModel.getCardSummaryCursor().observe(getViewLifecycleOwner(), cursor -> {
-      adapter.swapCursor(cursor);
-      countText.setText(String.valueOf(cursor == null ? 0 : cursor.getCount()));
+      adapter.swapCursor(cursor); //戻り値の Cursor は close したりしないこと
       circlerProgess.setVisibility(View.INVISIBLE);
       recyclerView.setVisibility(View.VISIBLE);
     });
