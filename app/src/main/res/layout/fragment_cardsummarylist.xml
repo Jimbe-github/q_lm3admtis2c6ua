@@ -25,6 +25,7 @@
       android:textSize="20dp"
       app:layout_constraintBaseline_toBaselineOf="@id/button"
       app:layout_constraintEnd_toStartOf="@id/postCountText" />
+
   <TextView
       android:id="@+id/postCountText"
       android:layout_width="wrap_content"
@@ -38,6 +39,8 @@
       android:id="@+id/recyclerView"
       android:layout_width="0dp"
       android:layout_height="0dp"
+      android:fadeScrollbars="false"
+      android:scrollbars="vertical"
       app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
       app:layout_constraintBottom_toBottomOf="parent"
       app:layout_constraintEnd_toEndOf="parent"
