@@ -1,7 +1,5 @@
 package com.teratail.q_lm3admtis2c6ua;
 
-import android.app.Dialog;
-import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.TypedValue;
@@ -20,7 +18,6 @@ public class AiueoSelectFragment extends DialogFragment {
   @SuppressWarnings("unused")
   private static final String LOG_TAG = AiueoSelectFragment.class.getSimpleName();
 
-  private Dialog dialog;
   private Button latestSelect;
   private int defaultColor = Color.BLACK;
 
@@ -40,10 +37,7 @@ public class AiueoSelectFragment extends DialogFragment {
       Button button = (Button)v;
       changeSelected(button);
       viewModel.setSelectedAiueo((Aiueo)button.getTag());
-      if(dialog != null) {
-        dialog.dismiss();
-        dialog = null; //念の為
-      }
+      if(getDialog() != null) dismiss(); //ダイアログ動作中なら消す
     };
 
     EnumMap<Aiueo,Button> bMap = new EnumMap<>(Aiueo.class);
@@ -90,12 +84,5 @@ public class AiueoSelectFragment extends DialogFragment {
         latestSelect.setTextColor(Color.RED);
       }
     }
-  }
-
-  @NonNull
-  @Override
-  public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-    dialog = super.onCreateDialog(savedInstanceState);
-    return dialog;
   }
 }
