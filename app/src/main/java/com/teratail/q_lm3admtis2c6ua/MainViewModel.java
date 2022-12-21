@@ -10,6 +10,7 @@ import androidx.lifecycle.*;
 import androidx.work.WorkInfo;
 
 import java.util.List;
+import java.util.function.*;
 
 public class MainViewModel extends AndroidViewModel {
   @SuppressWarnings("unused")
@@ -33,37 +34,36 @@ public class MainViewModel extends AndroidViewModel {
   void setDownloadLiveData(LiveData<List<WorkInfo>> workInfoListLiveData) { downloadLiveData = workInfoListLiveData; }
   LiveData<List<WorkInfo>> getDownloadWorkInfo() { return downloadLiveData; }
 
-  private class CursorContentObserver extends ContentObserver {
-    private final Aiueo aiueo;
-
-    CursorContentObserver(Aiueo aiueo) {
+  private class RequestCardSummaryCursorCallback extends ContentObserver implements BiConsumer<Aiueo,Cursor> {
+    private Aiueo aiueo;
+    RequestCardSummaryCursorCallback() {
       super(null);
-      this.aiueo = aiueo;
     }
     @Override
+    public void accept(Aiueo aiueo, Cursor cursor) {
+      Cursor old = cardSummaryCursorLiveData.getValue();
+      if(old == cursor) return;
+      if(old != null) {
+        old.unregisterContentObserver(this);
+        old.close();
+      }
+      this.aiueo = aiueo;
+      if(cursor != null) cursor.registerContentObserver(this);
+      cardSummaryCursorLiveData.setValue(cursor);
+    }
+    //accept で受けたカーソルの利用中にその元テーブルが修正された場合に呼ばれる.
+    @Override
     public void onChange(boolean selfChange) {
-      if(aiueo == null) return;
-      requestCardSummaryCursor(aiueo);
+      requestCardSummaryCursor(aiueo); //再取得
     }
   }
-  private CursorContentObserver cursorContentObserver = null;
+
+  private final RequestCardSummaryCursorCallback requestCardSummaryCursorCallback = new RequestCardSummaryCursorCallback();
 
   private final MutableLiveData<Cursor> cardSummaryCursorLiveData = new MutableLiveData<>(null);
   LiveData<Cursor> getCardSummaryCursor() { return cardSummaryCursorLiveData; }
   void requestCardSummaryCursor(Aiueo aiueo) {
-    mainModel.requestCardSummaryCursor(aiueo, handler, cursor -> {
-      Cursor old = cardSummaryCursorLiveData.getValue();
-      if(old == cursor) return;
-      if(old != null) {
-        old.unregisterContentObserver(cursorContentObserver);
-        old.close();
-      }
-      if(cursor != null) {
-        cursorContentObserver = new CursorContentObserver(aiueo);
-        cursor.registerContentObserver(cursorContentObserver);
-      }
-      cardSummaryCursorLiveData.setValue(cursor);
-    });
+    mainModel.requestCardSummaryCursor(aiueo, handler, requestCardSummaryCursorCallback);
   }
 
   private final MutableLiveData<Aiueo> selectedAiueoLiveData = new MutableLiveData<>();
@@ -86,10 +86,14 @@ public class MainViewModel extends AndroidViewModel {
   protected void onCleared() {
     Log.d(LOG_TAG, "onCleared");
     super.onCleared();
+
+    //検索中等を止める
+    mainModel.clear();
+
+    //カーソル解放
     Cursor cursor = cardSummaryCursorLiveData.getValue();
     if(cursor != null) {
       cardSummaryCursorLiveData.setValue(null);
-      cursor.unregisterContentObserver(cursorContentObserver);
       cursor.close();
     }
   }
