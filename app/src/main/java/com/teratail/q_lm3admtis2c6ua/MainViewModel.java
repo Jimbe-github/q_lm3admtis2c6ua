@@ -10,7 +10,6 @@ import androidx.lifecycle.*;
 import androidx.work.WorkInfo;
 
 import java.util.List;
-import java.util.function.*;
 
 public class MainViewModel extends AndroidViewModel {
   @SuppressWarnings("unused")
@@ -25,6 +24,7 @@ public class MainViewModel extends AndroidViewModel {
     super(application);
     mainModel = new MainModel(application);
     handler = new Handler(Looper.getMainLooper());
+    setTitle();
   }
 
   void requestDownload() {
@@ -35,38 +35,60 @@ public class MainViewModel extends AndroidViewModel {
   @SuppressWarnings("unused")
   LiveData<List<WorkInfo>> getDownloadWorkInfo() { return downloadLiveData; }
 
-  private class RequestCardSummaryCursorCallback extends ContentObserver implements BiConsumer<Aiueo,Cursor> {
-    private Aiueo aiueo;
+  private final MutableLiveData<Target> selectedTargetLiveData = new MutableLiveData<>(Target.OPUS);
+  LiveData<Target> getSelectedTarget() {
+    return selectedTargetLiveData;
+  }
+  void setSelectedTarget(@NonNull Target listTarget) {
+    if(selectedTargetLiveData.getValue() == listTarget) return;
+    selectedTargetLiveData.setValue(listTarget);
+    setTitle();
+    requestCardSummaryCursor();
+  }
+
+  private class RequestCardSummaryCursorCallback extends ContentObserver implements RequestCardSummaryRunnable.CallBack {
     RequestCardSummaryCursorCallback() {
       super(null);
     }
     @Override
-    public void accept(Aiueo aiueo, Cursor cursor) {
+    public void start(Target listTarget, Aiueo aiueo) {
+      cardSummaryProcessingStateLiveData.setValue(CardSummaryProcessingState.START);
+    }
+    @Override
+    public void complete(Target listTarget, Aiueo aiueo, Cursor cursor) {
+      cardSummaryProcessingStateLiveData.setValue(CardSummaryProcessingState.STOP);
       Cursor old = cardSummaryCursorLiveData.getValue();
       if(old == cursor) return;
       if(old != null) {
         old.unregisterContentObserver(this);
         old.close();
       }
-      this.aiueo = aiueo;
       if(cursor != null) cursor.registerContentObserver(this);
       cardSummaryCursorLiveData.setValue(cursor);
-      setTitle(aiueo, cursor == null ? 0 : cursor.getCount());
+      setTitle();
+    }
+    @Override
+    public void cancel(Target listTarget, Aiueo aiueo) {
+      cardSummaryProcessingStateLiveData.setValue(CardSummaryProcessingState.STOP);
     }
     //accept で受けたカーソルの利用中にその元テーブルが修正された場合に呼ばれる.
     @Override
     public void onChange(boolean selfChange) {
-      requestCardSummaryCursor(aiueo); //再取得
+      requestCardSummaryCursor(); //再取得
     }
   }
-
   private final RequestCardSummaryCursorCallback requestCardSummaryCursorCallback = new RequestCardSummaryCursorCallback();
+
+  enum CardSummaryProcessingState { START, STOP }
+  private final MutableLiveData<CardSummaryProcessingState> cardSummaryProcessingStateLiveData = new MutableLiveData<>(CardSummaryProcessingState.STOP);
+  LiveData<CardSummaryProcessingState> getCardSummaryProcessingState() { return cardSummaryProcessingStateLiveData; }
 
   private final MutableLiveData<Cursor> cardSummaryCursorLiveData = new MutableLiveData<>(null);
   LiveData<Cursor> getCardSummaryCursor() { return cardSummaryCursorLiveData; }
 
-  void requestCardSummaryCursor(Aiueo aiueo) {
-    mainModel.requestCardSummaryCursor(aiueo, handler, requestCardSummaryCursorCallback);
+  private void requestCardSummaryCursor() {
+    if(selectedAiueoLiveData.getValue() == null) return;
+    mainModel.requestCardSummaryCursor(selectedTargetLiveData.getValue(), selectedAiueoLiveData.getValue(), handler, requestCardSummaryCursorCallback);
   }
 
   private final MutableLiveData<Aiueo> selectedAiueoLiveData = new MutableLiveData<>();
@@ -74,17 +96,23 @@ public class MainViewModel extends AndroidViewModel {
     return selectedAiueoLiveData;
   }
   void setSelectedAiueo(Aiueo aiueo) {
+    if(selectedAiueoLiveData.getValue() == aiueo) return;
     selectedAiueoLiveData.setValue(aiueo);
+    setTitle();
+    requestCardSummaryCursor();
   }
 
-  private final MutableLiveData<String> titleLiveData = new MutableLiveData<>("作品一覧");
+  private final MutableLiveData<String> titleLiveData = new MutableLiveData<>("");
   LiveData<String> getTitle() {
     return titleLiveData;
   }
-  private void setTitle(Aiueo aiueo, int count) {
-    StringBuilder sb = new StringBuilder("作品一覧");
-    if(aiueo != null) {
-      sb.append("(").append(aiueo).append(":").append(count).append("件)");
+  private void setTitle() {
+    StringBuilder sb = new StringBuilder(selectedTargetLiveData.getValue().text).append("一覧");
+    if(selectedAiueoLiveData.getValue() != null) {
+      sb.append("(").append(selectedAiueoLiveData.getValue()).append(":");
+      Cursor cursor = cardSummaryCursorLiveData.getValue();
+      int rows = cursor == null ? 0 : cursor.getCount();
+      sb.append(rows).append("件)");
     }
     titleLiveData.setValue(sb.toString());
   }

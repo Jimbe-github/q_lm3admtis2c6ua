@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+  <item android:id="@+id/menu_listtarget"
+      android:title="一覧対象">
+    <menu>
+      <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/menu_opus"
+            android:icon="@android:drawable/ic_menu_gallery"
+            android:title="作品毎" />
+        <item
+            android:id="@+id/menu_author"
+            android:icon="@android:drawable/ic_menu_edit"
+            android:title="著者毎" />
+      </group>
+    </menu>
+  </item>
+</menu>

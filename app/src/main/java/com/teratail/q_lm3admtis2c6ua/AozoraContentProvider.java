@@ -31,11 +31,13 @@ public class AozoraContentProvider extends ContentProvider {
     FILE_NOOP(File.TABLE+SUFFIX_NOOP, Subtype.DIR,  File.CONTENT_TYPE),
 
     CARDSUMMARY(CardSummary.TABLE,
-            "(SELECT c."+Card.TITLE+" as "+CardSummary.TITLE+","+
-                    " c."+Card.SORT_TITLE+" as "+CardSummary.SORT_TITLE+","+
-                    " c."+Card.SUBTITLE+" as "+CardSummary.SUBTITLE +","+
-                    " c."+Card.CARD_URL+" as "+CardSummary.CARD_URL+","+
-                    " a."+Author.FAMILY_NAME+" || ' ' || a."+Author.PERSONAL_NAME+" as "+CardSummary.AUTHOR +
+            "(SELECT c."+Card.TITLE+" as "+CardSummary.TITLE+
+                    ", c."+Card.SORT_TITLE+" as "+CardSummary.SORT_TITLE+
+                    ", c."+Card.SUBTITLE+" as "+CardSummary.SUBTITLE+
+                    ", c."+Card.CARD_URL+" as "+CardSummary.CARD_URL+
+                    ", a."+Author.FAMILY_NAME+" || ' ' || a."+Author.PERSONAL_NAME+" as "+CardSummary.AUTHOR+
+                    ", a."+Author.SORT_FAMILY_NAME+" as "+CardSummary.SORT_AUTHOR_FNAME+
+                    ", a."+Author.SORT_PERSONAL_NAME+" as "+CardSummary.SORT_AUTHOR_PNAME+
                     " FROM "+Card.TABLE+" as c INNER JOIN "+Author.TABLE+" as a"+
                     " ON c."+Card.AUTHOR_ID+" = a."+Author._ID+")" ,
             Subtype.DIR, CardSummary.CONTENT_TYPE, false, false, false); //query のみ

@@ -1,12 +1,8 @@
 package com.teratail.q_lm3admtis2c6ua;
 
-import static com.teratail.q_lm3admtis2c6ua.AozoraDatabase.Author;
-import static com.teratail.q_lm3admtis2c6ua.AozoraDatabase.Card;
-import static com.teratail.q_lm3admtis2c6ua.AozoraDatabase.Download;
-
 import android.content.*;
 import android.database.Cursor;
-import android.database.sqlite.*;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.util.Log;
 
@@ -29,63 +25,6 @@ public class DownloadWorker extends Worker {
   private DatabaseHelper helper;
   private ContentResolver resolver;
 
-  private static class Storer {
-    private SQLiteStatement upsertAuthorStmt, upsertCardStmt, upsertFileStmt, updateDownloadStmt;
-
-    Storer(SQLiteDatabase db) {
-      upsertAuthorStmt = db.compileStatement("INSERT OR REPLACE INTO "+Author.TABLE+"(" +
-              Author._ID+","+Author.FAMILY_NAME+","+Author.SORT_FAMILY_NAME+","+Author.PERSONAL_NAME+","+Author.SORT_PERSONAL_NAME +
-              ") VALUES (?,?,?,?,?)");
-      upsertCardStmt = db.compileStatement("INSERT OR REPLACE INTO "+Card.TABLE+"(" +
-              Card._ID+","+Card.TITLE+","+Card.SORT_TITLE+","+Card.SUBTITLE+","+Card.CARD_URL+","+Card.AUTHOR_ID +
-              ") VALUES (?,?,?,?,?,?)");
-      upsertFileStmt = db.compileStatement("INSERT OR REPLACE INTO "+AozoraDatabase.File.TABLE+"(" +
-              AozoraDatabase.File.CARD_ID+","+AozoraDatabase.File.KIND+","+AozoraDatabase.File.URL+","+AozoraDatabase.File.LAST_UPDATE+","+AozoraDatabase.File.CHARSET +
-              ") VALUES (?,?,?,?,?)");
-      updateDownloadStmt = db.compileStatement("UPDATE "+Download.TABLE+" SET "+Download.LAST_MODIFIED+"=?");
-    }
-
-    void upsertAuthor(long authorId, String familyName, String personalName, String sortFamilyName, String sortPersonalName) {
-      upsertAuthorStmt.bindLong(1, authorId);
-      upsertAuthorStmt.bindString(2, familyName); //姓
-      upsertAuthorStmt.bindString(3, sortFamilyName); //ソート用姓読み
-      upsertAuthorStmt.bindString(4, personalName); //名
-      upsertAuthorStmt.bindString(5, sortPersonalName); //ソート用名読み
-      upsertAuthorStmt.executeInsert();
-    }
-
-    void upsertCard(long cardId, String title, String sortTitle, String subtitle, String cardUrl, long authorId) {
-      upsertCardStmt.bindLong(1, cardId);
-      upsertCardStmt.bindString(2, title); //作品名
-      upsertCardStmt.bindString(3, sortTitle); //ソート用読み
-      upsertCardStmt.bindString(4, subtitle); //副題
-      upsertCardStmt.bindString(5, cardUrl); //図書カードURL
-      upsertCardStmt.bindLong(6, authorId);
-      upsertCardStmt.executeInsert();
-    }
-
-    void upsertFile(long cardId, String kind, String url, String lastUpdate, String charset) {
-      upsertFileStmt.bindLong(1, cardId);
-      upsertFileStmt.bindString(2, kind); //種別('text'/'html')
-      upsertFileStmt.bindString(3, url); //ファイルURL
-      upsertFileStmt.bindString(4, lastUpdate); //ファイル最終更新日
-      upsertFileStmt.bindString(5, charset); //ファイル符号化方式
-      upsertFileStmt.executeInsert();
-    }
-
-    void updateDownload(String lastModified) {
-      updateDownloadStmt.bindString(1, lastModified);
-      updateDownloadStmt.executeUpdateDelete();
-    }
-
-    void close() {
-      upsertAuthorStmt.close();
-      upsertCardStmt.close();
-      upsertFileStmt.close();
-      updateDownloadStmt.close();
-    }
-  }
-
   public DownloadWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) throws MalformedURLException {
     super(context, workerParams);
 
@@ -102,7 +41,6 @@ public class DownloadWorker extends Worker {
       Log.d(LOG_TAG, "url=" + url);
       HttpURLConnection con = (HttpURLConnection) url.openConnection();
       con.setRequestMethod("GET");
-      con.connect();
       try {
         String lastModified = con.getHeaderField("last-modified");
         Log.d(LOG_TAG, "lastModified=" + lastModified);
@@ -141,7 +79,7 @@ public class DownloadWorker extends Worker {
     SQLiteDatabase db = helper.getWritableDatabase();
 
     db.beginTransaction();
-    Storer storer = new Storer(db);
+    AozoraDatabase.Storer storer = new AozoraDatabase.Storer(db);
     try {
       List<String> tokens = new ArrayList<>(columns.size());
       parser.parse(reader, token -> {
@@ -171,10 +109,10 @@ public class DownloadWorker extends Worker {
       db.endTransaction();
     }
 
-    notifyInsert(Author.CONTENT_URI);
-    notifyInsert(Card.CONTENT_URI);
+    notifyInsert(AozoraDatabase.Author.CONTENT_URI);
+    notifyInsert(AozoraDatabase.Card.CONTENT_URI);
     notifyInsert(AozoraDatabase.File.CONTENT_URI);
-    notifyInsert(Download.CONTENT_URI);
+    notifyInsert(AozoraDatabase.Download.CONTENT_URI);
   }
 
   private boolean isDownloaded(String lastModified) {
