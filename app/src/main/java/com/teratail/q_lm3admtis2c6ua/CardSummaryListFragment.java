@@ -46,10 +46,10 @@ public class CardSummaryListFragment extends Fragment {
       recyclerView.setVisibility(inProcessing ? View.INVISIBLE : View.VISIBLE);
     });
 
-    viewModel.getCardSummaryCursor().observe(getViewLifecycleOwner(), cursor -> adapter.swapCursor(cursor)); //戻り値の Cursor は close したりしないこと
+    viewModel.getCardSummaryCursor().observe(getViewLifecycleOwner(), adapter::swapCursor); //戻り値の Cursor は close したりしない
 
     ActionBar actionBar = ((AppCompatActivity)requireActivity()).getSupportActionBar();
-    viewModel.getTitle().observe(getViewLifecycleOwner(), title -> actionBar.setTitle(title));
+    viewModel.getTitle().observe(getViewLifecycleOwner(), actionBar::setTitle);
   }
 
   private static class CardSummaryAdapter extends RecyclerView.Adapter<CardSummaryAdapter.ViewHolder> {

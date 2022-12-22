@@ -35,7 +35,7 @@ public class AiueoSelectFragment extends DialogFragment {
 
     View.OnClickListener clickListener = v -> {
       Button button = (Button)v;
-      changeSelected(button);
+      changeSelected(button); //ラジオボタン的動作
       viewModel.setSelectedAiueo((Aiueo)button.getTag());
       if(getDialog() != null) dismiss(); //ダイアログ動作中なら消す
     };

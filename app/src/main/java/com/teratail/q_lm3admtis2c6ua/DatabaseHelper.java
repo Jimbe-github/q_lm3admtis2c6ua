@@ -16,7 +16,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
   }
 
   private DatabaseHelper(@Nullable Context context) {
-    super(context, "aozora.db", null, 2);
+    super(context, "aozora.db", null, 3);
   }
 
   @Override
@@ -41,8 +41,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             ", "+Author.SORT_PERSONAL_NAME+" TEXT NOT NULL" +
             ")");
     db.execSQL("CREATE TABLE file " +
-            "( "+File._ID+" INTEGER PRIMARY KEY" +
-            ", "+File.CARD_ID+" INTEGER NOT NULL" +
+            "( "+File.CARD_ID+" INTEGER NOT NULL" +
             ", "+File.KIND+" TEXT NOT NULL" +
             ", "+File.URL+" TEXT NOT NULL" +
             ", "+File.LAST_UPDATE+" TEXT NOT NULL" +
