@@ -52,11 +52,11 @@ public class MainViewModel extends AndroidViewModel {
     }
     @Override
     public void start(Target listTarget, Aiueo aiueo) {
-      cardSummaryProcessingStateLiveData.setValue(CardSummaryProcessingState.START);
+      cardSummaryProcessStateLiveData.setValue(CardSummaryProcessState.PROCESSING);
     }
     @Override
     public void complete(Target listTarget, Aiueo aiueo, Cursor cursor) {
-      cardSummaryProcessingStateLiveData.setValue(CardSummaryProcessingState.STOP);
+      cardSummaryProcessStateLiveData.setValue(CardSummaryProcessState.IDLE);
       Cursor old = cardSummaryCursorLiveData.getValue();
       if(old == cursor) return;
       if(old != null) {
@@ -69,7 +69,7 @@ public class MainViewModel extends AndroidViewModel {
     }
     @Override
     public void cancel(Target listTarget, Aiueo aiueo) {
-      cardSummaryProcessingStateLiveData.setValue(CardSummaryProcessingState.STOP);
+      cardSummaryProcessStateLiveData.setValue(CardSummaryProcessState.IDLE);
     }
     //accept で受けたカーソルの利用中にその元テーブルが修正された場合に呼ばれる.
     @Override
@@ -79,9 +79,9 @@ public class MainViewModel extends AndroidViewModel {
   }
   private final RequestCardSummaryCursorCallback requestCardSummaryCursorCallback = new RequestCardSummaryCursorCallback();
 
-  enum CardSummaryProcessingState { START, STOP }
-  private final MutableLiveData<CardSummaryProcessingState> cardSummaryProcessingStateLiveData = new MutableLiveData<>(CardSummaryProcessingState.STOP);
-  LiveData<CardSummaryProcessingState> getCardSummaryProcessingState() { return cardSummaryProcessingStateLiveData; }
+  enum CardSummaryProcessState { PROCESSING, IDLE }
+  private final MutableLiveData<CardSummaryProcessState> cardSummaryProcessStateLiveData = new MutableLiveData<>(CardSummaryProcessState.IDLE);
+  LiveData<CardSummaryProcessState> getCardSummaryProcessState() { return cardSummaryProcessStateLiveData; }
 
   private final MutableLiveData<Cursor> cardSummaryCursorLiveData = new MutableLiveData<>(null);
   LiveData<Cursor> getCardSummaryCursor() { return cardSummaryCursorLiveData; }

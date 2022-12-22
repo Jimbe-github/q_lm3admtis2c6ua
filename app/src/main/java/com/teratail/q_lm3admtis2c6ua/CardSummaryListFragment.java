@@ -40,10 +40,10 @@ public class CardSummaryListFragment extends Fragment {
     });
     recyclerView.setAdapter(adapter);
 
-    viewModel.getCardSummaryProcessingState().observe(getViewLifecycleOwner(), state -> {
-      boolean isStart = state == MainViewModel.CardSummaryProcessingState.START;
-      circlerProgess.setVisibility(isStart ? View.VISIBLE : View.INVISIBLE);
-      recyclerView.setVisibility(isStart ? View.INVISIBLE : View.VISIBLE);
+    viewModel.getCardSummaryProcessState().observe(getViewLifecycleOwner(), state -> {
+      boolean inProcessing = state == MainViewModel.CardSummaryProcessState.PROCESSING;
+      circlerProgess.setVisibility(inProcessing ? View.VISIBLE : View.INVISIBLE);
+      recyclerView.setVisibility(inProcessing ? View.INVISIBLE : View.VISIBLE);
     });
 
     viewModel.getCardSummaryCursor().observe(getViewLifecycleOwner(), cursor -> adapter.swapCursor(cursor)); //戻り値の Cursor は close したりしないこと
