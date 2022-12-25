@@ -58,26 +58,10 @@ public class CardSummaryListFragment extends Fragment {
       void onClick(String cardUrl);
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
-      final TextView num, title, subtitle, author;
-
-      public ViewHolder(@NonNull View itemView) {
-        super(itemView);
-        num = itemView.findViewById(R.id.num);
-        title = itemView.findViewById(R.id.title);
-        subtitle = itemView.findViewById(R.id.subtitle);
-        author = itemView.findViewById(R.id.author);
-        if(rowClickListener != null) itemView.setOnClickListener(v -> rowClickListener.onClick((String)itemView.getTag()));
-      }
-    }
+    int titleIndex, subtitleIndex, urlIndex, personIndex;
 
     private final RowClickListener rowClickListener;
     private Cursor cursor;
-    int titleIndex, subtitleIndex, urlIndex, authorIndex;
-
-    public CardSummaryAdapter(RowClickListener rowClickListener) {
-      this.rowClickListener = rowClickListener;
-    }
 
     @SuppressLint("NotifyDataSetChanged")
     public Cursor swapCursor(Cursor cursor) {
@@ -87,10 +71,32 @@ public class CardSummaryListFragment extends Fragment {
         titleIndex = this.cursor.getColumnIndex(CardSummary.TITLE);
         subtitleIndex = this.cursor.getColumnIndex(CardSummary.SUBTITLE);
         urlIndex = this.cursor.getColumnIndex(CardSummary.CARD_URL);
-        authorIndex = this.cursor.getColumnIndex(CardSummary.AUTHOR);
+        personIndex = this.cursor.getColumnIndex(CardSummary.PERSON);
       }
       notifyDataSetChanged();
       return old;
+    }
+
+    public CardSummaryAdapter(RowClickListener rowClickListener) {
+      this.rowClickListener = rowClickListener;
+    }
+
+    @Override
+    public void onBindViewHolder(ViewHolder holder, int position) {
+      cursor.moveToPosition(position);
+      String title = cursor.getString(titleIndex);
+      String subtitle = cursor.getString(subtitleIndex);
+      String url = cursor.getString(urlIndex);
+      String person = cursor.getString(personIndex);
+
+      holder.itemView.setTag(url);
+
+      holder.num.setText(String.format("%d.", position+1));
+      holder.title.setText(title);
+      holder.subtitle.setText(subtitle);
+      holder.person.setText(person);
+
+      holder.subtitle.setVisibility(subtitle.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     @NonNull
@@ -100,22 +106,17 @@ public class CardSummaryListFragment extends Fragment {
       return new ViewHolder(inflate);
     }
 
-    @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
-      cursor.moveToPosition(position);
-      String title = cursor.getString(titleIndex);
-      String subtitle = cursor.getString(subtitleIndex);
-      String url = cursor.getString(urlIndex);
-      String author = cursor.getString(authorIndex);
+    public class ViewHolder extends RecyclerView.ViewHolder {
+      final TextView num, title, subtitle, person;
 
-      holder.itemView.setTag(url);
-
-      holder.num.setText(String.format("%d.", position+1));
-      holder.title.setText(title);
-      holder.subtitle.setText(subtitle);
-      holder.author.setText(author);
-
-      holder.subtitle.setVisibility(subtitle.isEmpty() ? View.GONE : View.VISIBLE);
+      public ViewHolder(@NonNull View itemView) {
+        super(itemView);
+        num = itemView.findViewById(R.id.num);
+        title = itemView.findViewById(R.id.title);
+        subtitle = itemView.findViewById(R.id.subtitle);
+        person = itemView.findViewById(R.id.person);
+        if(rowClickListener != null) itemView.setOnClickListener(v -> rowClickListener.onClick((String)itemView.getTag()));
+      }
     }
 
     @Override

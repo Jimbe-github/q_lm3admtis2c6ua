@@ -20,26 +20,34 @@ public class AozoraContentProvider extends ContentProvider {
   private enum UriPattern {
     DOWNLOAD(     Download.TABLE,             Subtype.DIR, Download.CONTENT_TYPE, false, true, false), //query,update のみ
     DOWNLOAD_NOOP(Download.TABLE+SUFFIX_NOOP, Subtype.DIR, Download.CONTENT_TYPE),
-    CARD(     Card.TABLE,      Subtype.DIR,  Card.CONTENT_TYPE),
-    CARD_ITEM(Card.TABLE+"/#", Subtype.ITEM, Card.CONTENT_ITEM_TYPE),
-    CARD_NOOP(Card.TABLE+SUFFIX_NOOP, Subtype.DIR,  Card.CONTENT_TYPE),
-    AUTHOR(     Author.TABLE,      Subtype.DIR,  Author.CONTENT_TYPE),
-    AUTHOR_ITEM(Author.TABLE+"/#", Subtype.ITEM, Author.CONTENT_ITEM_TYPE),
-    AUTHOR_NOOP(Author.TABLE+SUFFIX_NOOP, Subtype.DIR,  Author.CONTENT_TYPE),
+    OPUS(     Opus.TABLE,      Subtype.DIR,  Opus.CONTENT_TYPE),
+    OPUS_ITEM(Opus.TABLE+"/#", Subtype.ITEM, Opus.CONTENT_ITEM_TYPE),
+    OPUS_NOOP(Opus.TABLE+SUFFIX_NOOP, Subtype.DIR,  Opus.CONTENT_TYPE),
+    PERSON(     Person.TABLE,      Subtype.DIR,  Person.CONTENT_TYPE),
+    PERSON_ITEM(Person.TABLE+"/#", Subtype.ITEM, Person.CONTENT_ITEM_TYPE),
+    PERSON_NOOP(Person.TABLE+SUFFIX_NOOP, Subtype.DIR,  Person.CONTENT_TYPE),
+    OPUS_PERSON_LINK(     OpusPersonLink.TABLE,      Subtype.DIR,  OpusPersonLink.CONTENT_TYPE),
+    OPUS_PERSON_LINK_ITEM(OpusPersonLink.TABLE+"/#", Subtype.ITEM, OpusPersonLink.CONTENT_ITEM_TYPE),
+    OPUS_PERSON_LINK_NOOP(OpusPersonLink.TABLE+SUFFIX_NOOP, Subtype.DIR,  OpusPersonLink.CONTENT_TYPE),
     FILE(     File.TABLE,      Subtype.DIR,  File.CONTENT_TYPE),
     FILE_ITEM(File.TABLE+"/#", Subtype.ITEM, File.CONTENT_ITEM_TYPE),
     FILE_NOOP(File.TABLE+SUFFIX_NOOP, Subtype.DIR,  File.CONTENT_TYPE),
+    ORIGINAL(     Original.TABLE,      Subtype.DIR,  Original.CONTENT_TYPE),
+    ORIGINAL_ITEM(Original.TABLE+"/#", Subtype.ITEM, Original.CONTENT_ITEM_TYPE),
+    ORIGINAL_NOOP(Original.TABLE+SUFFIX_NOOP, Subtype.DIR,  Original.CONTENT_TYPE),
 
     CARDSUMMARY(CardSummary.TABLE,
-            "(SELECT c."+Card.TITLE+" as "+CardSummary.TITLE+
-                    ", c."+Card.SORT_TITLE+" as "+CardSummary.SORT_TITLE+
-                    ", c."+Card.SUBTITLE+" as "+CardSummary.SUBTITLE+
-                    ", c."+Card.CARD_URL+" as "+CardSummary.CARD_URL+
-                    ", a."+Author.FAMILY_NAME+" || ' ' || a."+Author.PERSONAL_NAME+" as "+CardSummary.AUTHOR+
-                    ", a."+Author.SORT_FAMILY_NAME+" as "+CardSummary.SORT_AUTHOR_FNAME+
-                    ", a."+Author.SORT_PERSONAL_NAME+" as "+CardSummary.SORT_AUTHOR_PNAME+
-                    " FROM "+Card.TABLE+" as c INNER JOIN "+Author.TABLE+" as a"+
-                    " ON c."+Card.AUTHOR_ID+" = a."+Author._ID+")" ,
+            "(SELECT o."+Opus.TITLE+" as "+CardSummary.TITLE+
+                    ", o."+Opus.SORT_TITLE+" as "+CardSummary.SORT_TITLE+
+                    ", o."+Opus.SUBTITLE+" as "+CardSummary.SUBTITLE+
+                    ", o."+Opus.READING_SUBTITLE+" as "+CardSummary.READING_SUBTITLE+
+                    ", o."+Opus.CARD_URL+" as "+CardSummary.CARD_URL+
+                    ", p."+Person.FAMILY_NAME+" || ' ' || p."+Person.PERSONAL_NAME+" as "+CardSummary.PERSON+
+                    ", p."+Person.SORT_FAMILY_NAME+" as "+CardSummary.SORT_PERSON_FNAME +
+                    ", p."+Person.SORT_PERSONAL_NAME+" as "+CardSummary.SORT_PERSON_PNAME +
+                    " FROM "+Opus.TABLE+" as o LEFT OUTER JOIN "+Person.TABLE+" as p"+
+                        " ON o."+Opus.CARD_PERSON_ID+"=p."+Person._ID+
+            ")",
             Subtype.DIR, CardSummary.CONTENT_TYPE, false, false, false); //query のみ
 
     static UriPattern get(int ordinal) {

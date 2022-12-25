@@ -10,7 +10,7 @@ import androidx.work.*;
 
 import com.teratail.q_lm3admtis2c6ua.AozoraDatabase.CardSummary;
 
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CancellationException;
 
 public class MainModel {
@@ -97,7 +97,7 @@ class RequestCardSummaryRunnable implements CancellationRunnable {
 
   private final CancellationSignal cancelSignal = new CancellationSignal();
 
-  private static final String[] PROJECTION = new String[]{CardSummary.TITLE, CardSummary.SUBTITLE, CardSummary.CARD_URL, CardSummary.AUTHOR};
+  private static final String[] PROJECTION = new String[]{CardSummary.TITLE, CardSummary.SUBTITLE, CardSummary.CARD_URL, CardSummary.PERSON};
   private String[] selectionArgs;
   private String selection, sortOrder;
 
@@ -109,13 +109,18 @@ class RequestCardSummaryRunnable implements CancellationRunnable {
     this.callback = callback;
 
     String targetColumn;
+    StringJoiner sj = new StringJoiner(",");
     if(listTarget == Target.OPUS) {
       targetColumn = CardSummary.SORT_TITLE;
-      sortOrder = CardSummary.SORT_TITLE+", "+CardSummary.SORT_AUTHOR_FNAME+", "+CardSummary.SORT_AUTHOR_FNAME;
+      sj.add(CardSummary.SORT_TITLE).add(CardSummary.READING_SUBTITLE);
+      sj.add(CardSummary.SORT_PERSON_FNAME).add(CardSummary.SORT_PERSON_FNAME);
     } else {
-      targetColumn = CardSummary.SORT_AUTHOR_FNAME;
-      sortOrder = CardSummary.SORT_AUTHOR_FNAME+", "+CardSummary.SORT_AUTHOR_FNAME+", "+CardSummary.SORT_TITLE;
+      targetColumn = CardSummary.SORT_PERSON_FNAME;
+      sj.add(CardSummary.SORT_PERSON_FNAME).add(CardSummary.SORT_PERSON_FNAME);
+      sj.add(CardSummary.SORT_TITLE).add(CardSummary.READING_SUBTITLE);
     }
+    sortOrder = sj.toString();
+
     if(aiueo == Aiueo.他) {
       selection = targetColumn+"=? OR INSTR(?,SUBSTR(" + targetColumn + ",1,1))=0"; //SUBSTR は空文字列からは空文字列を返すため先に判定が必要(nullだったらIFNULL使えたのに…)
       selectionArgs = new String[]{"", Aiueo.VALID_STRING};

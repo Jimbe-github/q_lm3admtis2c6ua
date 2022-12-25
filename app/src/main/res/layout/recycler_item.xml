@@ -30,7 +30,7 @@
       app:layout_constraintStart_toStartOf="@id/title"
       app:layout_constraintTop_toBottomOf="@id/title" />
   <TextView
-      android:id="@+id/author"
+      android:id="@+id/person"
       android:layout_width="0dp"
       android:layout_height="wrap_content"
       android:textSize="18dp"
