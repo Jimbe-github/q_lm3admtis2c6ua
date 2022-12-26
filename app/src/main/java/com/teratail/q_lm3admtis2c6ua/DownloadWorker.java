@@ -79,13 +79,9 @@ public class DownloadWorker extends Worker {
   }
 
   private void storeCsv1(Reader r, String name, String lastModified) throws IOException {
-    LineFeedFactionReader reader = new LineFeedFactionReader(r);
-    CsvParser parser = new CsvParser();
-
-    String header = reader.readLine(); //一行目はヘッダ
+    CsvReader cr = new CsvReader(r);
+    List<String> header = cr.readLine(); //一行目はヘッダ
     Log.d(LOG_TAG, "header=" + header);
-    List<String> columns = new ArrayList<>();
-    parser.parse(header, columns::add);
 
     SQLiteDatabase db = helper.getWritableDatabase();
 
@@ -93,10 +89,7 @@ public class DownloadWorker extends Worker {
     AozoraDatabase.Storer storer = new AozoraDatabase.Storer(db);
     Pattern cardPersonPattern = Pattern.compile("/([0-9]+)/");
     try {
-      List<String> tokens = new ArrayList<>(columns.size());
-      parser.parse(reader, token -> {
-        tokens.add(token);
-        if(tokens.size() < columns.size()) return;
+      for(List<String> tokens; (tokens=cr.readLine()) != null && tokens.size() == header.size(); ) {
         try {
           long opusId = Long.parseLong(tokens.get(0)); //作品ID
           long personId = Long.parseLong(tokens.get(14)); //人物ID
@@ -126,8 +119,7 @@ public class DownloadWorker extends Worker {
           Log.d(LOG_TAG, "Exception: "+e.getMessage()+", tokens=" + tokens.toString());
           //throw e;
         }
-        tokens.clear();
-      });
+      }
       storer.updateDownload(name, lastModified);
       db.setTransactionSuccessful();
     } finally {
@@ -136,16 +128,16 @@ public class DownloadWorker extends Worker {
     }
   }
 
+  @FunctionalInterface
+  private interface storerFunc {
+    void store(Reader r, String name, String lastModified) throws IOException;
+  }
+
   private boolean isDownloaded(String name, String lastModified) {
     SQLiteDatabase db = helper.getReadableDatabase();
     try(Cursor cursor = db.rawQuery("SELECT last_modified FROM download WHERE name=? AND last_modified=?", new String[]{name,lastModified})) {
       return cursor.moveToNext();
     }
-  }
-
-  @FunctionalInterface
-  private interface storerFunc {
-    void store(Reader r, String name, String lastModified) throws IOException;
   }
 
   private void notifyInsert(Uri uri) {
